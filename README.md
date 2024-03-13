@@ -1,2 +1,2 @@
-# allesweb.github.io
+# jamancode.github.io
 Web Sachen machen 
