@@ -5,54 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dein Angelfreund</title>
-    <meta name="description" content="Wissenschaftlich fundierter Angel-Fangkalender mit Bisswahrscheinlichkeits-Algorithmus, Umweltdaten-Analyse und detaillierter Fangdokumentation für maximalen Fangerfolg.">
 
-    <!-- PWA Manifest -->
+    <!-- PWA Manifest and iOS specific tags -->
     <link rel="manifest" href="manifest.json">
-
-    <!-- Standard Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="images/icon-16x16.png">
-
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180x180.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="images/icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="images/icon-144x144.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="images/icon-120x120.png">
-    <link rel="apple-touch-icon" sizes="114x114" href="images/icon-114x114.png">
-    <link rel="apple-touch-icon" sizes="76x76" href="images/icon-76x76.png">
-    <link rel="apple-touch-icon" sizes="72x72" href="images/icon-72x72.png">
-    <link rel="apple-touch-icon" sizes="60x60" href="images/icon-60x60.png">
-    <link rel="apple-touch-icon" sizes="57x57" href="images/icon-57x57.png">
-
-    <!-- Apple specific PWA meta tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Dein Angelfreund">
-
-    <!-- Microsoft specific -->
-    <meta name="msapplication-TileColor" content="#16213e">
-    <meta name="msapplication-TileImage" content="images/icon-144x144.png">
-    <meta name="msapplication-config" content="browserconfig.xml">
-
-    <!-- Theme color for browser UI -->
-    <meta name="theme-color" content="#16213e">
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#16213e">
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a1a2e">
-
-    <!-- PWA Display -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Dein Angelfreund">
-
-    <!-- Social Media / SEO -->
-    <meta property="og:title" content="Wissenschaftlicher Fangkalender">
-    <meta property="og:description" content="Dein digitaler Angelfreund mit wissenschaftlich fundierter Bisswahrscheinlichkeits-Analyse">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="images/icon-512x512.png">
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Wissenschaftlicher Fangkalender">
-    <meta name="twitter:description" content="Dein digitaler Angelfreund für maximalen Fangerfolg">
-    <meta name="twitter:image" content="images/icon-512x512.png">
+    <meta name="apple-mobile-web-app-title" content="Angelfreund">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -183,7 +141,7 @@
         }
 
         h1 {
-            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
             font-weight: 700;
             background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
             -webkit-background-clip: text;
@@ -1476,7 +1434,6 @@
                 content: '\2713'; /* Häkchen */
                 position: absolute; top: -0.1em; left: 0.1em; font-size: 1em; color: #333;
             }
-            .connection-status { display: none !important; }
         }
 
         /* Mobile Optimization */
@@ -1543,12 +1500,6 @@
 
     .pressure-trend i {
         font-size: 0.8rem;
-    }
-
-    .connection-status {
-        margin-left: 0; /* Align with other centered column items */
-        margin-top: 0.5rem; /* Consistent spacing */
-        /* align-self: center; is already in the general rule and correct */
     }
 }
 
@@ -1758,30 +1709,6 @@
                 grid-template-columns: 1fr;
             }
         }
-
-        /* Connection Status */
-        .connection-status {
-            /* Existing styles like background, color, padding, border-radius, font-size, animation can remain */
-            background: var(--danger-gradient);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--radius-md);
-            font-size: 0.8rem;
-            display: none; /* This is its default state, JS controls visibility via .online/.offline */
-            animation: slideDownFade 0.3s ease-out;
-            /* New/Modified styles for header integration: */
-            align-self: center; /* Align with other items in flex container */
-            margin-left: 1rem;  /* Add some space from the weather widget */
-        }
-
-        .connection-status.offline {
-            display: block;
-        }
-
-        .connection-status.online {
-            background: var(--success-gradient);
-            display: block;
-        }
     </style>
 </head>
 <body>
@@ -1810,10 +1737,6 @@
                     <i class="fas fa-moon"></i>
                     <span id="moonPhase">--</span>
                 </div>
-            </div>
-            <!-- Connection Status Indicator -->
-            <div class="connection-status" id="connectionStatus">
-                <i class="fas fa-wifi"></i> Offline
             </div>
         </div>
     </header>
@@ -2026,15 +1949,6 @@
                     <h2 class="card-title">Einstellungen</h2>
                 </div>
                 <div id="settingsContent">
-                    <div class="form-group">
-                        <label class="form-label">App Installation</label>
-                        <button id="settingsInstallBtn" class="btn btn-success" style="display: none; min-width: 150px;" onclick="installPWA()">
-                            <span class="btn-text"><i class="fas fa-download" style="margin-right: 0.5rem;"></i> App installieren</span>
-                            <span class="loading-spinner" style="display: none; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin-left: 8px; vertical-align: middle;"></span>
-                        </button>
-                        <p id="installStatusMsg" style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-secondary);"></p>
-                    </div>
-                    <hr style="margin: 1.5rem 0;">
                     <div class="form-group">
                         <label class="form-label" for="apiKeyInput">OpenWeatherMap API Key</label>
                         <input type="text" class="form-control" id="apiKeyInput" placeholder="Ihr API Key hier einfügen">
@@ -2631,182 +2545,6 @@
     <!-- JavaScript -->
     <script>
 
-// PWA Variables and Functions
-let deferredPrompt = null; // Ensure it's initialized to null
-let newWorker;
-
-// PWA Functions
-function installPWA() {
-    console.log('[PWA Debug] installPWA() called. deferredPrompt:', deferredPrompt);
-    const settingsInstallBtn = document.getElementById('settingsInstallBtn');
-    const btnText = settingsInstallBtn ? settingsInstallBtn.querySelector('.btn-text') : null;
-    const loadingSpinner = settingsInstallBtn ? settingsInstallBtn.querySelector('.loading-spinner') : null;
-    const installStatusMsg = document.getElementById('installStatusMsg');
-
-    if (!deferredPrompt) {
-        console.log('[PWA Debug] installPWA: deferredPrompt is null. Cannot prompt.');
-        if (installStatusMsg) installStatusMsg.textContent = "Installation derzeit nicht möglich (Browser-Event nicht verfügbar oder bereits verwendet).";
-        if (settingsInstallBtn) settingsInstallBtn.disabled = true; // Keep visible but disabled
-        return;
-    }
-
-    if (settingsInstallBtn) settingsInstallBtn.disabled = true;
-    if (btnText) btnText.style.display = 'none';
-    if (loadingSpinner) loadingSpinner.style.display = 'inline-block';
-    if (installStatusMsg) installStatusMsg.textContent = "Installation wird gestartet...";
-
-    console.log('[PWA Debug] Calling deferredPrompt.prompt()');
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
-        console.log('[PWA Debug] userChoice outcome:', choiceResult.outcome);
-        if (settingsInstallBtn) settingsInstallBtn.disabled = false;
-        if (btnText) btnText.style.display = 'inline-block';
-        if (loadingSpinner) loadingSpinner.style.display = 'none';
-
-        if (choiceResult.outcome === 'accepted') {
-            if (installStatusMsg) installStatusMsg.textContent = "App-Installation akzeptiert. Abschluss durch System...";
-            // The 'appinstalled' event will handle final state update.
-        } else { // outcome === 'dismissed'
-            if (installStatusMsg) installStatusMsg.textContent = "Installation abgelehnt. Button wird ausgeblendet.";
-            if (settingsInstallBtn) settingsInstallBtn.style.display = 'none'; // Hide if dismissed, as prompt is consumed.
-        }
-        deferredPrompt = null; // Prompt can only be used once
-    }).catch((err) => {
-        console.error('[PWA Debug] Error in installPWA userChoice:', err);
-        if (installStatusMsg) installStatusMsg.textContent = "Fehler während der Installation: " + err.message;
-        if (settingsInstallBtn) { // Reset button state on error
-            settingsInstallBtn.disabled = false;
-            if (btnText) btnText.style.display = 'inline-block';
-            if (loadingSpinner) loadingSpinner.style.display = 'none';
-        }
-    });
-}
-
-function initializePWA() {
-    console.log('[PWA Debug] initializePWA started.');
-    const settingsInstallBtn = document.getElementById('settingsInstallBtn');
-    const btnText = settingsInstallBtn ? settingsInstallBtn.querySelector('.btn-text') : null;
-    const loadingSpinner = settingsInstallBtn ? settingsInstallBtn.querySelector('.loading-spinner') : null;
-    const installStatusMsg = document.getElementById('installStatusMsg');
-    // Add console logs for these references to be sure
-    console.log('[PWA Debug initializePWA] settingsInstallBtn:', settingsInstallBtn);
-    console.log('[PWA Debug initializePWA] installStatusMsg:', installStatusMsg);
-
-    // Check for service worker support
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('service-worker.js') // MODIFIED HERE
-                .then(registration => {
-                    console.log('🎣 ServiceWorker registriert:', registration.scope);
-
-                    registration.addEventListener('updatefound', () => {
-                        newWorker = registration.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                showUpdateBanner();
-                            }
-                        });
-                    });
-                })
-                .catch(err => console.log('❌ ServiceWorker Registrierung fehlgeschlagen:', err));
-        });
-    }
-
-    // PWA Install Banner
-    window.addEventListener('beforeinstallprompt', (e) => {
-        console.log('[PWA Debug] beforeinstallprompt event fired!');
-        e.preventDefault();
-        deferredPrompt = e;
-        console.log('[PWA Debug] deferredPrompt captured:', deferredPrompt);
-        console.log('[PWA Debug] localStorage pwa_installed:', localStorage.getItem('pwa_installed'));
-        const settingsInstallBtn = document.getElementById('settingsInstallBtn'); // Get fresh reference
-        const installStatusMsg = document.getElementById('installStatusMsg'); // Get fresh reference
-
-        if (localStorage.getItem('pwa_installed') !== 'true') {
-            console.log('[PWA Debug] Attempting to show settingsInstallBtn. Button ref:', settingsInstallBtn);
-            if (settingsInstallBtn) {
-                settingsInstallBtn.style.display = 'inline-block';
-                settingsInstallBtn.disabled = false;
-                const btnTextSpan = settingsInstallBtn.querySelector('.btn-text');
-                const loadingSpinnerSpan = settingsInstallBtn.querySelector('.loading-spinner');
-                if(btnTextSpan) btnTextSpan.style.display = 'inline-block';
-                if(loadingSpinnerSpan) loadingSpinnerSpan.style.display = 'none';
-            }
-            if (installStatusMsg) installStatusMsg.textContent = "Bereit zum Installieren!";
-        } else {
-            console.log('[PWA Debug] beforeinstallprompt: App already installed, ensuring button is hidden. Button ref:', settingsInstallBtn);
-            if (settingsInstallBtn) settingsInstallBtn.style.display = 'none';
-            if (installStatusMsg) installStatusMsg.textContent = "App ist bereits installiert.";
-        }
-    });
-
-    // Track when app was installed
-    window.addEventListener('appinstalled', (e) => {
-        console.log('[PWA Debug] appinstalled event fired.');
-        console.log('🎣 Fangkalender PWA installiert');
-        localStorage.setItem('pwa_installed', 'true');
-        const settingsInstallBtn = document.getElementById('settingsInstallBtn'); // Get fresh reference
-        if (settingsInstallBtn) {
-            settingsInstallBtn.style.display = 'none';
-        }
-        const installStatusMsg = document.getElementById('installStatusMsg');
-        if (installStatusMsg) {
-            installStatusMsg.textContent = "App erfolgreich installiert!";
-        }
-        // deferredPrompt would be null here anyway if installPWA was called
-        deferredPrompt = null;
-    });
-
-    // Connection status
-    updateConnectionStatus();
-    window.addEventListener('online', updateConnectionStatus);
-    window.addEventListener('offline', updateConnectionStatus);
-
-    // Initial state for settings tab install button/message
-    if (localStorage.getItem('pwa_installed') === 'true') {
-        if (installStatusMsg) installStatusMsg.textContent = "App ist bereits auf diesem Gerät installiert.";
-        if (settingsInstallBtn) settingsInstallBtn.style.display = 'none';
-        console.log('[PWA Debug initializePWA] App installed, button hidden.');
-    } else {
-        // If not installed, make button visible but disabled, and set waiting message.
-        if (installStatusMsg) installStatusMsg.textContent = "Warte auf Installationsbereitschaft des Browsers...";
-        if (settingsInstallBtn) {
-            settingsInstallBtn.style.display = 'inline-block'; // Make it visible
-            settingsInstallBtn.disabled = true;             // Initially disabled
-            if (btnText) btnText.style.display = 'inline-block';    // Ensure text part is visible
-            if (loadingSpinner) loadingSpinner.style.display = 'none'; // Ensure spinner is hidden
-            console.log('[PWA Debug initializePWA] App NOT installed. Button forced visible and disabled. Waiting for beforeinstallprompt.');
-        } else {
-            console.log('[PWA Debug initializePWA] settingsInstallBtn not found!');
-        }
-    }
-}
-
-// Removed: showInstallBanner()
-// Removed: hideInstallBanner()
-// Removed: installPWA() - will be replaced by header button logic (now re-added above)
-// Removed: dismissInstallBanner()
-// Removed: showUpdateBanner()
-// Removed: hideUpdateBanner()
-// Removed: updatePWA()
-// Removed: dismissUpdateBanner()
-
-function updateConnectionStatus() {
-    const statusEl = document.getElementById('connectionStatus');
-    if (!statusEl) return; // Added null check
-
-    if (navigator.onLine) {
-        statusEl.innerHTML = '<i class="fas fa-wifi"></i> Online';
-        statusEl.className = 'connection-status online';
-        setTimeout(() => {
-            statusEl.classList.remove('online');
-        }, 3000);
-    } else {
-        statusEl.innerHTML = '<i class="fas fa-wifi-slash"></i> Offline';
-        statusEl.className = 'connection-status offline';
-    }
-}
-
 // Enhanced Fish Database
 const fishDatabase = {
     pike: { name: 'Hecht', scientificName: 'Esox lucius', icon: '🦈', optimalTemp: { min: 8, max: 15 }, activeTemp: { min: 4, max: 20 }, optimalPressure: 'falling', pressureRange: { min: 1000, max: 1015 }, bestTimes: ['dawn', 'dusk'], bestMonths: [9, 10, 11, 3, 4, 5], moonPreference: 'full', weatherPreference: 'cloudy', windPreference: { min: 5, max: 15 }, cloudPreference: { min: 60, max: 90 }, behaviors: { spring: { activity: 0.8, depth: 'shallow', pattern: 'aggressive' }, summer: { activity: 0.5, depth: 'deep', pattern: 'ambush' }, autumn: { activity: 0.9, depth: 'medium', pattern: 'hunting' }, winter: { activity: 0.3, depth: 'deep', pattern: 'lethargic' } } },
@@ -2878,7 +2616,6 @@ baitOptionsByMethod[""] = [{value: "", text: "Erst Angelmethode wählen..."}]; /
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', function() {
-    initializePWA();
     initializeApp();
 });
 
@@ -5018,6 +4755,18 @@ function refreshProbabilities(event) { // event hinzugefügt
 
     </script>
     <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js') // Path relative to index.html
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(error => {
+            console.log('ServiceWorker registration failed: ', error);
+          });
+      });
+    }
     </script>
 </body>
 </html>
