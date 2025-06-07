@@ -1765,6 +1765,9 @@
             <div class="connection-status" id="connectionStatus">
                 <i class="fas fa-wifi"></i> Offline
             </div>
+            <button id="installPwaButton" class="btn" style="display: none; margin-left: 1rem;">
+                <i class="fas fa-download"></i> App installieren
+            </button>
         </div>
     </header>
 
@@ -4809,6 +4812,59 @@ function refreshProbabilities(event) { // event hinzugefügt
 
     </script>
     <script>
+   let deferredPrompt;
+   const installPwaButton = document.getElementById('installPwaButton'); // This ID will be for the button added in the next step
+
+   window.addEventListener('beforeinstallprompt', (e) => {
+     // Prevent Chrome 67 and earlier from automatically showing the prompt
+     e.preventDefault();
+     // Stash the event so it can be triggered later.
+     deferredPrompt = e;
+     // Update UI to notify the user they can add to home screen
+     if (installPwaButton) {
+       installPwaButton.style.display = 'block'; // Or 'inline-block', 'flex', etc.
+       console.log('`beforeinstallprompt` event fired, install button shown.');
+     } else {
+       console.log('`beforeinstallprompt` event fired, but install button not found yet.');
+     }
+   });
+
+   if (installPwaButton) {
+     installPwaButton.addEventListener('click', async () => {
+       // Hide our user interface that shows our A2HS button
+       installPwaButton.style.display = 'none';
+       if (deferredPrompt) {
+         // Show the prompt
+         deferredPrompt.prompt();
+         // Wait for the user to respond to the prompt
+         try {
+           const choiceResult = await deferredPrompt.userChoice;
+           if (choiceResult.outcome === 'accepted') {
+             console.log('User accepted the A2HS prompt');
+           } else {
+             console.log('User dismissed the A2HS prompt');
+           }
+         } catch (error) {
+           console.error('Error with userChoice:', error);
+         }
+         // We've used the prompt, and can't use it again, discard it
+         deferredPrompt = null;
+       } else {
+         console.log('Install button clicked, but no deferredPrompt available.');
+       }
+     });
+   }
+
+   window.addEventListener('appinstalled', () => {
+     // Hide the install button if the app is installed
+     if (installPwaButton) {
+       installPwaButton.style.display = 'none';
+     }
+     // Clear the deferredPrompt so it can be garbage collected
+     deferredPrompt = null;
+     // Optionally, send analytics event to indicate successful install
+     console.log('PWA was installed');
+   });
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
