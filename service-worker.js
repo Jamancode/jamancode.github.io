@@ -1,6 +1,7 @@
 const CACHE_NAME = 'fangkalender-pwa-cache-v1';
 const STATIC_CACHE = 'fangkalender-static-v1';
 const API_CACHE = 'fangkalender-api-v1';
+const CDN_CACHE = 'fangkalender-cdn-v1';
 
 // Kernressourcen die IMMER verfügbar sein müssen
 const CRITICAL_RESOURCES = [
@@ -48,7 +49,7 @@ self.addEventListener('activate', event => {
       caches.keys().then(cacheNames => {
         return Promise.all(
           cacheNames.map(cache => {
-            if (![STATIC_CACHE, API_CACHE].includes(cache)) {
+            if (![STATIC_CACHE, API_CACHE, CDN_CACHE].includes(cache)) {
               console.log('ServiceWorker: Deleting old cache:', cache);
               return caches.delete(cache);
             }
@@ -63,60 +64,97 @@ self.addEventListener('activate', event => {
 
 // Fetch: Intelligente Cache-Strategien
 self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-  
-  // Statische Ressourcen: Cache First
-  if (event.request.destination === 'document' || 
-      event.request.destination === 'script' || 
-      event.request.destination === 'style' ||
-      event.request.destination === 'image') {
+    const url = new URL(event.request.url);
+
+    // Handle CDN assets: Cache First, then Network
+    if (url.hostname === 'cdnjs.cloudflare.com' || url.hostname === 'unpkg.com') {
+        event.respondWith(
+            caches.open(CDN_CACHE).then(cache => {
+                return cache.match(event.request).then(cachedResponse => {
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+                    return fetch(event.request).then(networkResponse => {
+                        if (networkResponse && networkResponse.status === 200) {
+                            cache.put(event.request, networkResponse.clone());
+                        }
+                        return networkResponse;
+                    }).catch(err => {
+                        console.error('ServiceWorker: CDN fetch failed, request:', event.request.url, err);
+                        // Optionally, return a generic offline response or rethrow
+                    });
+                });
+            })
+        );
+        return; // Important to return after handling the CDN request
+    }
+
+    // Existing logic for static resources (documents, scripts, styles, images)
+    if (event.request.destination === 'document' ||
+        event.request.destination === 'script' ||
+        event.request.destination === 'style' ||
+        event.request.destination === 'image') {
+        event.respondWith(handleStaticResource(event.request));
+        return;
+    }
     
-    event.respondWith(handleStaticResource(event.request));
-    return;
-  }
-  
-  // API-Calls: Network First mit Cache Fallback + Stale-While-Revalidate
-  if (API_PATTERNS.some(pattern => pattern.test(url.href))) {
-    event.respondWith(handleAPIRequest(event.request));
-    return;
-  }
-  
-  // Alles andere: Network First
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
-  );
+    // Existing logic for API calls
+    if (API_PATTERNS.some(pattern => pattern.test(url.href))) {
+        event.respondWith(handleAPIRequest(event.request));
+        return;
+    }
+
+    // Default: Network First for everything else
+    event.respondWith(
+        fetch(event.request).catch(() => {
+            return caches.match(event.request);
+        })
+    );
 });
 
-// Cache First für statische Inhalte
 async function handleStaticResource(request) {
-  try {
-    const cachedResponse = await caches.match(request);
-    
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse && networkResponse.status === 200) {
-      const cache = await caches.open(STATIC_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    console.error('ServiceWorker: Static resource error:', error);
-    
-    // Offline-Fallback für HTML-Seiten
-    if (request.destination === 'document') {
-      return createOfflinePage();
-    }
-    
-    throw error;
-  }
-}
+            if (request.mode === 'navigate') { // For document navigations (like index.html)
+                try {
+                    const networkResponse = await fetch(request);
+                    // If network fetch is successful, clone, cache, and return it
+                    if (networkResponse && networkResponse.status === 200) {
+                        const cache = await caches.open(STATIC_CACHE);
+                        cache.put(request, networkResponse.clone());
+                        return networkResponse;
+                    }
+                    // If network fetch fails (e.g. offline) or returns an error status,
+                    // immediately try to serve from cache as a fallback.
+                    console.log('ServiceWorker: Network fetch for navigation returned non-200 or failed, trying cache for:', request.url);
+                    const cachedResponse = await caches.match(request);
+                    return cachedResponse || createOfflinePage(); // Fallback to generic offline page if not in cache
+                } catch (error) {
+                    console.log('ServiceWorker: Network fetch failed catastrophically for navigation, falling back to cache/offline for:', request.url, error);
+                    const cachedResponse = await caches.match(request);
+                    // As index.html is critical and should be in CRITICAL_RESOURCES, try matching it specifically
+                    // if the original request (which might have query params) isn't found directly.
+                    // The path 'index.html' is relative to the SW's location.
+                    return cachedResponse || caches.match('index.html') || createOfflinePage();
+                }
+            } else { // For other static assets (CSS, JS, images): Cache First strategy
+                try {
+                    const cachedResponse = await caches.match(request);
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+                    const networkResponse = await fetch(request);
+                    if (networkResponse && networkResponse.status === 200) {
+                        const cache = await caches.open(STATIC_CACHE);
+                        cache.put(request, networkResponse.clone());
+                    }
+                    return networkResponse;
+                } catch (error) {
+                    console.error('ServiceWorker: Static asset (non-navigation) fetch error:', request.url, error);
+                    // For non-navigational static assets, usually just let the browser handle the error
+                    // or rethrow if a specific offline asset (like a placeholder image) isn't available.
+                    throw error;
+                }
+            }
+        }
 
 // Network First mit intelligentem Caching für APIs
 async function handleAPIRequest(request) {
