@@ -2,8 +2,8 @@
   "name": "Wissenschaftlicher Fangkalender - Dein digitaler Angelfreund",
   "short_name": "Fangkalender",
   "description": "Wissenschaftlich fundierter Angel-Fangkalender mit Bisswahrscheinlichkeits-Algorithmus, Umweltdaten-Analyse, Solunar-Theorie und detaillierter Fangdokumentation. Dein persönliches Angel-Labor für maximalen Fangerfolg.",
-  "start_url": "/PWA/index.html?utm_source=pwa&utm_medium=homescreen",
-  "scope": "/PWA/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0a1a2e",
   "theme_color": "#16213e",
@@ -21,14 +21,8 @@
     },
     {
       "src": "images/icon-96x96.png",
-      "type": "image/png", 
-      "sizes": "96x96",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icon-128x128.png",
       "type": "image/png",
-      "sizes": "128x128",
+      "sizes": "96x96",
       "purpose": "any"
     },
     {
@@ -62,66 +56,29 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "images/screenshot-desktop.png",
-      "type": "image/png",
-      "sizes": "1280x720",
-      "form_factor": "wide",
-      "label": "Fangkalender Desktop-Ansicht mit Bisswahrscheinlichkeits-Dashboard"
-    },
-    {
-      "src": "images/screenshot-mobile.png", 
-      "type": "image/png",
-      "sizes": "390x844",
-      "form_factor": "narrow",
-      "label": "Mobile Kalender-Ansicht mit Tagesdetails und Fangdokumentation"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Neuen Fang hinzufügen",
       "short_name": "Fang+",
       "description": "Schnell einen neuen Fang dokumentieren",
-      "url": "/PWA/index.html?action=add-catch",
-      "icons": [
-        {
-          "src": "images/shortcut-add-catch.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/PWA/index.html?action=add-catch"
     },
     {
       "name": "Bisswahrscheinlichkeit heute",
-      "short_name": "Prognose", 
+      "short_name": "Prognose",
       "description": "Aktuelle Bisswahrscheinlichkeit und Wetterdaten",
-      "url": "/PWA/index.html?action=today-forecast",
-      "icons": [
-        {
-          "src": "images/shortcut-forecast.png", 
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/PWA/index.html?action=today-forecast"
     },
     {
       "name": "Meine Statistiken",
       "short_name": "Stats",
-      "description": "Fangstatistiken und Analysen anzeigen", 
-      "url": "/PWA/index.html?action=statistics",
-      "icons": [
-        {
-          "src": "images/shortcut-stats.png",
-          "sizes": "96x96", 
-          "type": "image/png"
-        }
-      ]
+      "description": "Fangstatistiken und Analysen anzeigen",
+      "url": "/PWA/index.html?action=statistics"
     }
   ],
   "share_target": {
     "action": "/PWA/index.html?share-target",
-    "method": "GET", 
+    "method": "GET",
     "params": {
       "title": "title",
       "text": "text",
