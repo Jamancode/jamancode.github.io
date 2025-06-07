@@ -2,8 +2,8 @@
   "name": "Wissenschaftlicher Fangkalender - Dein digitaler Angelfreund",
   "short_name": "Fangkalender",
   "description": "Wissenschaftlich fundierter Angel-Fangkalender mit Bisswahrscheinlichkeits-Algorithmus, Umweltdaten-Analyse, Solunar-Theorie und detaillierter Fangdokumentation. Dein persönliches Angel-Labor für maximalen Fangerfolg.",
-  "start_url": "/Fangplaner/PWA/index.html?utm_source=pwa&utm_medium=homescreen",
-  "scope": "/Fangplaner/PWA/",
+  "start_url": "/PWA/index.html?utm_source=pwa&utm_medium=homescreen",
+  "scope": "/PWA/",
   "display": "standalone",
   "background_color": "#0a1a2e",
   "theme_color": "#16213e",
@@ -23,6 +23,12 @@
       "src": "images/icon-96x96.png",
       "type": "image/png", 
       "sizes": "96x96",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-128x128.png",
+      "type": "image/png",
+      "sizes": "128x128",
       "purpose": "any"
     },
     {
@@ -77,7 +83,7 @@
       "name": "Neuen Fang hinzufügen",
       "short_name": "Fang+",
       "description": "Schnell einen neuen Fang dokumentieren",
-      "url": "/Fangplaner/PWA/index.html?action=add-catch",
+      "url": "/PWA/index.html?action=add-catch",
       "icons": [
         {
           "src": "images/shortcut-add-catch.png",
@@ -90,7 +96,7 @@
       "name": "Bisswahrscheinlichkeit heute",
       "short_name": "Prognose", 
       "description": "Aktuelle Bisswahrscheinlichkeit und Wetterdaten",
-      "url": "/Fangplaner/PWA/index.html?action=today-forecast",
+      "url": "/PWA/index.html?action=today-forecast",
       "icons": [
         {
           "src": "images/shortcut-forecast.png", 
@@ -103,7 +109,7 @@
       "name": "Meine Statistiken",
       "short_name": "Stats",
       "description": "Fangstatistiken und Analysen anzeigen", 
-      "url": "/Fangplaner/PWA/index.html?action=statistics",
+      "url": "/PWA/index.html?action=statistics",
       "icons": [
         {
           "src": "images/shortcut-stats.png",
@@ -114,7 +120,7 @@
     }
   ],
   "share_target": {
-    "action": "/Fangplaner/PWA/index.html?share-target",
+    "action": "/PWA/index.html?share-target",
     "method": "GET", 
     "params": {
       "title": "title",
@@ -125,7 +131,7 @@
   "protocol_handlers": [
     {
       "protocol": "geo",
-      "url": "/Fangplaner/PWA/index.html?coordinates=%s"
+      "url": "/PWA/index.html?coordinates=%s"
     }
   ],
   "edge_side_panel": {
