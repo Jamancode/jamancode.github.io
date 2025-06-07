@@ -2,22 +2,27 @@
   "name": "Wissenschaftlicher Fangkalender - Dein digitaler Angelfreund",
   "short_name": "Fangkalender",
   "description": "Wissenschaftlich fundierter Angel-Fangkalender mit Bisswahrscheinlichkeits-Algorithmus, Umweltdaten-Analyse, Solunar-Theorie und detaillierter Fangdokumentation. Dein persönliches Angel-Labor für maximalen Fangerfolg.",
+  "lang": "de-DE",
+  "dir": "ltr",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0a1a2e",
   "theme_color": "#16213e",
-  "orientation": "portrait-primary",
-  "categories": [
-    "sports",
-    "lifestyle",
-    "utilities",
-    "productivity"
-  ],
-  "lang": "de-DE",
-  "dir": "ltr",
-  "prefer_related_applications": false,
   "icons": [
+    {
+      "src": "images/icon-16x16.png",
+      "type": "image/png",
+      "sizes": "16x16",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-32x32.png",
+      "type": "image/png",
+      "sizes": "32x32",
+      "purpose": "any"
+    },
     {
       "src": "images/icon-72x72.png",
       "type": "image/png",
@@ -87,6 +92,15 @@
       "url": "/PWA/index.html?action=statistics"
     }
   ],
+  "categories": [
+    "sports",
+    "lifestyle",
+    "utilities",
+    "productivity"
+  ],
+  "iarc_rating_id": "e58c174a-81d2-5c3c-32cc-34b8de4a52e9",
+  "prefer_related_applications": false,
+  "related_applications": [],
   "share_target": {
     "action": "/PWA/index.html?share-target",
     "method": "GET",
@@ -104,7 +118,5 @@
   ],
   "edge_side_panel": {
     "preferred_width": 400
-  },
-  "related_applications": [],
-  "iarc_rating_id": "e58c174a-81d2-5c3c-32cc-34b8de4a52e9"
+  }
 }
