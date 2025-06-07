@@ -1,7 +1,7 @@
 {
   "name": "Wissenschaftlicher Fangkalender - Dein digitaler Angelfreund",
-  "short_name": "Fangkalender",
-  "description": "Wissenschaftlich fundierter Angel-Fangkalender mit Bisswahrscheinlichkeits-Algorithmus, Umweltdaten-Analyse, Solunar-Theorie und detaillierter Fangdokumentation. Dein persönliches Angel-Labor für maximalen Fangerfolg.",
+  "short_name": "Dein Angelfreund",
+  "description": "Angel-Fangkalender mit Bisswahrscheinlichkeits-Algorithmus, Umweltdaten-Analyse, Solunar-Theorie und detaillierter Fangdokumentation. Dein persönliches Angel-Labor für maximalen Fangerfolg.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
