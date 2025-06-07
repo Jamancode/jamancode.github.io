@@ -1,2 +1,2 @@
 # jamancode.github.io
-Web Sachen machen 
+Is ne PWA, kannst installieren
