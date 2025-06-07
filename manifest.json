@@ -1,0 +1,136 @@
+{
+  "name": "Wissenschaftlicher Fangkalender - Dein digitaler Angelfreund",
+  "short_name": "Fangkalender",
+  "description": "Wissenschaftlich fundierter Angel-Fangkalender mit Bisswahrscheinlichkeits-Algorithmus, Umweltdaten-Analyse, Solunar-Theorie und detaillierter Fangdokumentation. Dein persönliches Angel-Labor für maximalen Fangerfolg.",
+  "start_url": "/Fangplaner/PWA/index.html?utm_source=pwa&utm_medium=homescreen",
+  "scope": "/Fangplaner/PWA/",
+  "display": "standalone",
+  "background_color": "#0a1a2e",
+  "theme_color": "#16213e",
+  "orientation": "portrait-primary",
+  "categories": ["sports", "lifestyle", "utilities", "productivity"],
+  "lang": "de-DE",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "images/icon-72x72.png",
+      "type": "image/png",
+      "sizes": "72x72",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-96x96.png",
+      "type": "image/png", 
+      "sizes": "96x96",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-144x144.png",
+      "type": "image/png",
+      "sizes": "144x144",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-152x152.png",
+      "type": "image/png",
+      "sizes": "152x152",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/icon-384x384.png",
+      "type": "image/png",
+      "sizes": "384x384",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "images/screenshot-desktop.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "form_factor": "wide",
+      "label": "Fangkalender Desktop-Ansicht mit Bisswahrscheinlichkeits-Dashboard"
+    },
+    {
+      "src": "images/screenshot-mobile.png", 
+      "type": "image/png",
+      "sizes": "390x844",
+      "form_factor": "narrow",
+      "label": "Mobile Kalender-Ansicht mit Tagesdetails und Fangdokumentation"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Neuen Fang hinzufügen",
+      "short_name": "Fang+",
+      "description": "Schnell einen neuen Fang dokumentieren",
+      "url": "/Fangplaner/PWA/index.html?action=add-catch",
+      "icons": [
+        {
+          "src": "images/shortcut-add-catch.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Bisswahrscheinlichkeit heute",
+      "short_name": "Prognose", 
+      "description": "Aktuelle Bisswahrscheinlichkeit und Wetterdaten",
+      "url": "/Fangplaner/PWA/index.html?action=today-forecast",
+      "icons": [
+        {
+          "src": "images/shortcut-forecast.png", 
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Meine Statistiken",
+      "short_name": "Stats",
+      "description": "Fangstatistiken und Analysen anzeigen", 
+      "url": "/Fangplaner/PWA/index.html?action=statistics",
+      "icons": [
+        {
+          "src": "images/shortcut-stats.png",
+          "sizes": "96x96", 
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/Fangplaner/PWA/index.html?share-target",
+    "method": "GET", 
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "geo",
+      "url": "/Fangplaner/PWA/index.html?coordinates=%s"
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "related_applications": [],
+  "iarc_rating_id": "e58c174a-81d2-5c3c-32cc-34b8de4a52e9"
+}
