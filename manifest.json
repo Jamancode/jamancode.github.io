@@ -8,7 +8,12 @@
   "background_color": "#0a1a2e",
   "theme_color": "#16213e",
   "orientation": "portrait-primary",
-  "categories": ["sports", "lifestyle", "utilities", "productivity"],
+  "categories": [
+    "sports",
+    "lifestyle",
+    "utilities",
+    "productivity"
+  ],
   "lang": "de-DE",
   "dir": "ltr",
   "prefer_related_applications": false,
@@ -23,6 +28,12 @@
       "src": "images/icon-96x96.png",
       "type": "image/png",
       "sizes": "96x96",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-128x128.png",
+      "type": "image/png",
+      "sizes": "128x128",
       "purpose": "any"
     },
     {
