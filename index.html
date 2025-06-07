@@ -1401,6 +1401,28 @@
             flex-grow: 1;
         }
 
+        /* Connection Status */
+        .connection-status {
+            background: var(--danger-gradient);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.8rem;
+            display: none; /* Default state, JS controls visibility */
+            animation: slideDownFade 0.3s ease-out;
+            align-self: center;
+            margin-left: 1rem;
+        }
+
+        .connection-status.offline {
+            display: block; /* Show when offline */
+        }
+
+        .connection-status.online {
+            background: var(--success-gradient);
+            display: block; /* Show briefly when online */
+        }
+
 
         /* Print Styles */
         @media print {
@@ -1434,6 +1456,7 @@
                 content: '\2713'; /* Häkchen */
                 position: absolute; top: -0.1em; left: 0.1em; font-size: 1em; color: #333;
             }
+            .connection-status { display: none !important; }
         }
 
         /* Mobile Optimization */
@@ -1737,6 +1760,10 @@
                     <i class="fas fa-moon"></i>
                     <span id="moonPhase">--</span>
                 </div>
+            </div>
+            <!-- Connection Status Indicator -->
+            <div class="connection-status" id="connectionStatus">
+                <i class="fas fa-wifi"></i> Offline
             </div>
         </div>
     </header>
@@ -2619,6 +2646,28 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
 
+function updateConnectionStatus() {
+    const statusEl = document.getElementById('connectionStatus');
+    if (!statusEl) return;
+
+    if (navigator.onLine) {
+        statusEl.innerHTML = '<i class="fas fa-wifi"></i> Online';
+        statusEl.className = 'connection-status online';
+        statusEl.style.display = 'block'; // Make sure it's visible for the brief "online" message
+        setTimeout(() => {
+            // Only hide if it's still in the 'online' temporary display state
+            if (statusEl.classList.contains('online')) {
+                statusEl.style.display = 'none';
+                statusEl.classList.remove('online'); // Reset class
+            }
+        }, 3000);
+    } else {
+        statusEl.innerHTML = '<i class="fas fa-wifi-slash"></i> Offline';
+        statusEl.className = 'connection-status offline';
+        statusEl.style.display = 'block'; // Ensure it's visible when offline
+    }
+}
+
 function initializeApp() {
     loadApiKey();
     loadData();
@@ -2651,6 +2700,11 @@ function initializeApp() {
     updateFishWeightDisplay(document.getElementById('fishWeightSlider').value);
     updatePlannedDurationDisplay(document.getElementById('plannedDurationSlider').value);
     updateGewaesserDepthDisplay(document.getElementById('gewaesserDepthSlider').value);
+
+    // Connection status
+    updateConnectionStatus(); // Initial check
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
 }
 function colorToRgb(colorString) {
     if (!colorString) return '255,255,255'; // Fallback
