@@ -227,6 +227,9 @@
             padding-top: 1rem;
             overflow-y: auto; /* Falls Inhalt größer ist */
         }
+        #catchMapSidebar .collapsible-content.open {
+            max-height: none; /* Allow full content height, sidebar will scroll */
+        }
         .collapsible-header .fa-chevron-down {
             transition: transform 0.3s ease-out;
         }
@@ -1682,10 +1685,6 @@
             }
             #catchLocationMapModal #catchMapSidebar.collapsed {
                 display: none;
-            }
-
-            #catchLocationMapModal #catchMapSidebar .collapsible-content.open {
-                max-height: none; /* Allow full content height, sidebar itself will scroll */
             }
 
             #catchLocationMapModal #catchMapSidebar h4 {
