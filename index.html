@@ -2472,8 +2472,15 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="tripGewaesser">Gewässer</label>
-                            <select class="form-control" id="tripGewaesser" required>
-                            </select>
+                            <div class="location-input-group">
+                                <select class="form-control" id="tripGewaesser" required style="flex: 1;">
+                                    <!-- Optionen werden dynamisch gefüllt -->
+                                </select>
+                                <button type="button" class="btn btn-map" id="tripGewaesserMapButton" title="Gewässer auf Karte auswählen/anlegen" onclick="openMapForTripGewaesser()">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                </button>
+                            </div>
+                            <input type="hidden" id="tripGewaesserIdStore"> <!-- Zum Speichern der ID, falls benötigt -->
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="tripNotes">Notizen</label>
