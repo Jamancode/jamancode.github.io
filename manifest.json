@@ -1,122 +1,208 @@
 {
   "name": "Wissenschaftlicher Fangkalender - Dein digitaler Angelfreund",
-  "short_name": "Fangkalender",
-  "description": "Wissenschaftlich fundierter Angel-Fangkalender mit Bisswahrscheinlichkeits-Algorithmus, Umweltdaten-Analyse, Solunar-Theorie und detaillierter Fangdokumentation. Dein persönliches Angel-Labor für maximalen Fangerfolg.",
-  "lang": "de-DE",
-  "dir": "ltr",
-  "start_url": "./index.html",
-  "scope": "./",
+  "short_name": "Angelfreund",
+  "description": "Angel-Fangkalender mit Bisswahrscheinlichkeits-Algorithmus, Umweltdaten-Analyse, Solunar-Theorie und detaillierter Fangdokumentation. Offline-fähig und plattformübergreifend optimiert.",
+
+  "start_url": "/?utm_source=pwa&utm_medium=homescreen",
+  "scope": "/",
+  "id": "scientific-fishing-calendar-angelfreund-2025",
+
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+
   "background_color": "#0a1a2e",
   "theme_color": "#16213e",
+
+  "orientation": "any",
+
+  "categories": [
+    "sports",
+    "lifestyle",
+    "utilities",
+    "productivity",
+    "outdoors",
+    "fishing",
+    "science"
+  ],
+
+  "lang": "de-DE",
+  "dir": "ltr",
+
+  "prefer_related_applications": false,
+
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+
+  "handle_links": "preferred",
+
   "icons": [
     {
-      "src": "images/icon-16x16.png",
-      "type": "image/png",
-      "sizes": "16x16",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' fill='%2316213e' rx='8'/%3E%3Ctext x='24' y='32' font-size='20' text-anchor='middle' fill='white'%3E🎣%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
+      "sizes": "48x48",
       "purpose": "any"
     },
     {
-      "src": "images/icon-32x32.png",
-      "type": "image/png",
-      "sizes": "32x32",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icon-72x72.png",
-      "type": "image/png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Crect width='72' height='72' fill='%2316213e' rx='12'/%3E%3Ctext x='36' y='48' font-size='32' text-anchor='middle' fill='white'%3E🎣%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
       "sizes": "72x72",
       "purpose": "any"
     },
     {
-      "src": "images/icon-96x96.png",
-      "type": "image/png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%2316213e' rx='16'/%3E%3Ctext x='48' y='64' font-size='40' text-anchor='middle' fill='white'%3E🎣%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
       "sizes": "96x96",
       "purpose": "any"
     },
     {
-      "src": "images/icon-128x128.png",
-      "type": "image/png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' fill='%2316213e' rx='20'/%3E%3Ctext x='64' y='84' font-size='56' text-anchor='middle' fill='white'%3E🎣%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
       "sizes": "128x128",
       "purpose": "any"
     },
     {
-      "src": "images/icon-144x144.png",
-      "type": "image/png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 144 144'%3E%3Crect width='144' height='144' fill='%2316213e' rx='24'/%3E%3Ctext x='72' y='96' font-size='64' text-anchor='middle' fill='white'%3E🎣%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
       "sizes": "144x144",
       "purpose": "any"
     },
     {
-      "src": "images/icon-152x152.png",
-      "type": "image/png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 152 152'%3E%3Crect width='152' height='152' fill='%2316213e' rx='24'/%3E%3Ctext x='76' y='100' font-size='68' text-anchor='middle' fill='white'%3E🎣%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
       "sizes": "152x152",
       "purpose": "any"
     },
     {
-      "src": "images/icon-192x192.png",
-      "type": "image/png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Cdefs%3E%3ClinearGradient id='grad1' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2340127c'/%3E%3Cstop offset='100%25' stop-color='%231a0129'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='192' height='192' fill='url(%23grad1)' rx='32'/%3E%3Ctext x='96' y='128' font-size='84' text-anchor='middle' fill='white'%3E🎣%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "images/icon-384x384.png",
-      "type": "image/png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 384'%3E%3Cdefs%3E%3ClinearGradient id='grad2' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2340127c'/%3E%3Cstop offset='100%25' stop-color='%231a0129'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='384' height='384' fill='url(%23grad2)' rx='64'/%3E%3Ctext x='192' y='256' font-size='168' text-anchor='middle' fill='white'%3E🎣%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
       "sizes": "384x384",
       "purpose": "any"
     },
     {
-      "src": "images/icon-512x512.png",
-      "type": "image/png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='grad3' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2340127c'/%3E%3Cstop offset='100%25' stop-color='%231a0129'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' fill='url(%23grad3)' rx='85'/%3E%3Ctext x='256' y='340' font-size='224' text-anchor='middle' fill='white'%3E🎣%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
       "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],
+
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'%3E%3Cdefs%3E%3ClinearGradient id='bg1' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2340127c'/%3E%3Cstop offset='100%25' stop-color='%231a0129'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='540' height='720' fill='url(%23bg1)'/%3E%3Crect x='20' y='60' width='500' height='80' fill='%23ffffff20' rx='15'/%3E%3Ctext x='270' y='110' text-anchor='middle' fill='white' font-size='24' font-weight='bold'%3EAngelfreund%3C/text%3E%3Crect x='40' y='180' width='460' height='120' fill='%23ffffff15' rx='15'/%3E%3Ctext x='270' y='220' text-anchor='middle' fill='white' font-size='18'%3EBisswahrscheinlichkeit%3C/text%3E%3Ctext x='270' y='270' text-anchor='middle' fill='%2311998e' font-size='32' font-weight='bold'%3E🎣 85%25%3C/text%3E%3Crect x='40' y='330' width='460' height='300' fill='%23ffffff10' rx='15'/%3E%3Ctext x='270' y='370' text-anchor='middle' fill='white' font-size='18'%3EFangkalender%3C/text%3E%3Cg fill='%23ffffff40'%3E%3Crect x='60' y='400' width='50' height='40' rx='5'/%3E%3Crect x='130' y='400' width='50' height='40' rx='5'/%3E%3Crect x='200' y='400' width='50' height='40' rx='5'/%3E%3Crect x='270' y='400' width='50' height='40' rx='5'/%3E%3Crect x='340' y='400' width='50' height='40' rx='5'/%3E%3Crect x='410' y='400' width='50' height='40' rx='5'/%3E%3Crect x='480' y='400' width='50' height='40' rx='5'/%3E%3C/g%3E%3Ctext x='135' y='425' text-anchor='middle' fill='white' font-size='16'%3E🐟%3C/text%3E%3Ctext x='295' y='425' text-anchor='middle' fill='white' font-size='16'%3E🐟%3C/text%3E%3C/svg%3E",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Angelfreund Mobile - Bisswahrscheinlichkeit und Kalender"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 768'%3E%3Cdefs%3E%3ClinearGradient id='bg2' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2340127c'/%3E%3Cstop offset='100%25' stop-color='%231a0129'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1024' height='768' fill='url(%23bg2)'/%3E%3Crect x='40' y='40' width='944' height='100' fill='%23ffffff20' rx='20'/%3E%3Ctext x='512' y='100' text-anchor='middle' fill='white' font-size='32' font-weight='bold'%3EAngelfreund - Wissenschaftlicher Fangkalender%3C/text%3E%3Crect x='60' y='180' width='280' height='200' fill='%23ffffff15' rx='15'/%3E%3Ctext x='200' y='220' text-anchor='middle' fill='white' font-size='18'%3EBisswahrscheinlichkeit%3C/text%3E%3Crect x='370' y='180' width='280' height='200' fill='%23ffffff15' rx='15'/%3E%3Ctext x='510' y='220' text-anchor='middle' fill='white' font-size='18'%3EWetterdaten%3C/text%3E%3Crect x='680' y='180' width='284' height='200' fill='%23ffffff15' rx='15'/%3E%3Ctext x='822' y='220' text-anchor='middle' fill='white' font-size='18'%3ESolunar Zeiten%3C/text%3E%3Crect x='60' y='420' width='904' height='280' fill='%23ffffff10' rx='15'/%3E%3Ctext x='512' y='460' text-anchor='middle' fill='white' font-size='20'%3EFangkalender - Aktuelle Fänge%3C/text%3E%3C/svg%3E",
+      "sizes": "1024x768",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "Angelfreund Desktop - Vollständiges Dashboard"
+    }
+  ],
+
   "shortcuts": [
     {
       "name": "Neuen Fang hinzufügen",
       "short_name": "Fang+",
       "description": "Schnell einen neuen Fang dokumentieren",
-      "url": "./index.html?action=add-catch"
+      "url": "/?action=add-catch&utm_source=pwa_shortcut",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%2311998e' rx='32'/%3E%3Ctext x='96' y='128' font-size='84' text-anchor='middle' fill='white'%3E🐟%3C/text%3E%3C/svg%3E",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
     },
     {
-      "name": "Bisswahrscheinlichkeit heute",
+      "name": "Bisswahrscheinlichkeit",
       "short_name": "Prognose",
       "description": "Aktuelle Bisswahrscheinlichkeit und Wetterdaten",
-      "url": "./index.html?action=today-forecast"
+      "url": "/?action=today-forecast&utm_source=pwa_shortcut",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%23f39c12' rx='32'/%3E%3Ctext x='96' y='128' font-size='84' text-anchor='middle' fill='white'%3E📊%3C/text%3E%3C/svg%3E",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Angelgang starten",
+      "short_name": "Angeln",
+      "description": "Neuen Angelgang beginnen",
+      "url": "/?action=start-angelgang&utm_source=pwa_shortcut",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%23e74c3c' rx='32'/%3E%3Ctext x='96' y='128' font-size='84' text-anchor='middle' fill='white'%3E⏯️%3C/text%3E%3C/svg%3E",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
     },
     {
       "name": "Meine Statistiken",
       "short_name": "Stats",
-      "description": "Fangstatistiken und Analysen anzeigen",
-      "url": "./index.html?action=statistics"
+      "description": "Fangstatistiken und Analysen",
+      "url": "/?action=statistics&utm_source=pwa_shortcut",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%239b59b6' rx='32'/%3E%3Ctext x='96' y='128' font-size='84' text-anchor='middle' fill='white'%3E📈%3C/text%3E%3C/svg%3E",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ],
-  "categories": [
-    "sports",
-    "lifestyle",
-    "utilities",
-    "productivity"
-  ],
-  "iarc_rating_id": "e58c174a-81d2-5c3c-32cc-34b8de4a52e9",
-  "prefer_related_applications": false,
-  "related_applications": [],
+
   "share_target": {
-    "action": "./index.html?share-target",
+    "action": "/?share-target",
     "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
     "params": {
       "title": "title",
       "text": "text",
       "url": "url"
     }
   },
+
+  "file_handlers": [
+    {
+      "action": "/?file-handler",
+      "accept": {
+        "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp"],
+        "application/json": [".json"]
+      },
+      "launch_type": "single-client"
+    }
+  ],
+
   "protocol_handlers": [
     {
       "protocol": "geo",
-      "url": "./index.html?coordinates=%s"
+      "url": "/?coordinates=%s"
+    },
+    {
+      "protocol": "web+fishing",
+      "url": "/?fishing-data=%s"
     }
   ],
+
   "edge_side_panel": {
     "preferred_width": 400
-  }
+  },
+
+  "related_applications": [],
+
+  "iarc_rating_id": "e58c174a-81d2-5c3c-32cc-34b8de4a52e9"
 }
