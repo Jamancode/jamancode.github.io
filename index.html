@@ -2,15 +2,54 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dein Angelfreund</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="HandheldFriendly" content="true">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <!-- PWA Manifest and iOS specific tags -->
-    <link rel="manifest" href="manifest.json">
+    <!-- Empfohlene Meta-Tags für PWAs -->
+    <meta name="description" content="Dein intelligenter Angelfreund für erfolgreiche Angelausflüge. Planen, analysieren und fangen Sie mehr Fische.">
+    <meta name="keywords" content="Angeln, PWA, Angel-App, Fischfang, Angelplanung, Wetter, Solunar, Beissindex">
+    <meta name="author" content="Ihr Name oder Organisation">
+    <meta name="theme-color" content="#4A90E2"> <!-- Hauptfarbe Ihrer App -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Angelfreund">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png"> <!-- Icon für iOS Homescreen -->
+    <link rel="manifest" href="/manifest.json"> <!-- Korrekter Pfad zum Manifest -->
+
+    <!-- Weitere optionale Meta-Tags -->
+    <meta name="robots" content="index, follow"> <!-- Suchmaschinen-Steuerung -->
+    <meta name="rating" content="general">
+    <meta name="referrer" content="origin-when-cross-origin">
+
+    <!-- Open Graph Meta-Tags (für Social Media Sharing) -->
+    <meta property="og:title" content="Dein Angelfreund">
+    <meta property="og:description" content="Die PWA für passionierte Angler. Planen, analysieren und optimieren Sie Ihre Angelausflüge.">
+    <meta property="og:image" content="assets/images/og-image.png"> <!-- URL zu einem Vorschau-Bild -->
+    <meta property="og:url" content="https://IhreAppURL.com"> <!-- URL Ihrer PWA -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Angelfreund">
+
+    <!-- Twitter Card Meta-Tags (für Twitter Sharing) -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Dein Angelfreund">
+    <meta name="twitter:description" content="Verbessern Sie Ihr Angelerlebnis mit der Angelfreund PWA.">
+    <meta name="twitter:image" content="assets/images/twitter-card-image.png"> <!-- URL zu einem Twitter Card Bild -->
+    <!-- <meta name="twitter:site" content="@IhrTwitterHandle"> -->
+
+    <!-- Favicon Links (verschiedene Größen und Formate) -->
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/icons/favicon-48x48.png">
+    <link rel="shortcut icon" href="favicon.ico">
+
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileImage" content="assets/icons/ms-tile-icon-144x144.png">
+    <meta name="msapplication-TileColor" content="#4A90E2"> <!-- Gleiche Farbe wie theme-color -->
+    <meta name="application-name" content="Angelfreund">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -4811,72 +4850,1038 @@ function refreshProbabilities(event) { // event hinzugefügt
 }
 
     </script>
-    <script>
-   let deferredPrompt;
-   const installPwaButton = document.getElementById('installPwaButton'); // This ID will be for the button added in the next step
+<script>
+// Enhanced Service Worker Registration for maximale Browser-Kompatibilität
+class ServiceWorkerManager {
+    constructor(swPath = '/service-worker.js') {
+        this.swPath = swPath;
+        this.deferredPrompt = null;
+        this.installButton = document.getElementById('installPwaButton'); // Cache button
 
-   window.addEventListener('beforeinstallprompt', (e) => {
-     // Prevent Chrome 67 and earlier from automatically showing the prompt
-     e.preventDefault();
-     // Stash the event so it can be triggered later.
-     deferredPrompt = e;
-     // Update UI to notify the user they can add to home screen
-     if (installPwaButton) {
-       installPwaButton.style.display = 'block'; // Or 'inline-block', 'flex', etc.
-       console.log('`beforeinstallprompt` event fired, install button shown.');
-     } else {
-       console.log('`beforeinstallprompt` event fired, but install button not found yet.');
-     }
-   });
-
-   if (installPwaButton) {
-     installPwaButton.addEventListener('click', async () => {
-       // Hide our user interface that shows our A2HS button
-       installPwaButton.style.display = 'none';
-       if (deferredPrompt) {
-         // Show the prompt
-         deferredPrompt.prompt();
-         // Wait for the user to respond to the prompt
-         try {
-           const choiceResult = await deferredPrompt.userChoice;
-           if (choiceResult.outcome === 'accepted') {
-             console.log('User accepted the A2HS prompt');
-           } else {
-             console.log('User dismissed the A2HS prompt');
-           }
-         } catch (error) {
-           console.error('Error with userChoice:', error);
-         }
-         // We've used the prompt, and can't use it again, discard it
-         deferredPrompt = null;
-       } else {
-         console.log('Install button clicked, but no deferredPrompt available.');
-       }
-     });
-   }
-
-   window.addEventListener('appinstalled', () => {
-     // Hide the install button if the app is installed
-     if (installPwaButton) {
-       installPwaButton.style.display = 'none';
-     }
-     // Clear the deferredPrompt so it can be garbage collected
-     deferredPrompt = null;
-     // Optionally, send analytics event to indicate successful install
-     console.log('PWA was installed');
-   });
-    // PWA Service Worker Registration
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js') // Path relative to index.html
-          .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(error => {
-            console.log('ServiceWorker registration failed: ', error);
-          });
-      });
+        this._setupInstallListeners();
+        this._registerServiceWorker();
     }
-    </script>
+
+    _registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register(this.swPath)
+                    .then(registration => {
+                        console.log('ServiceWorker: Registrierung erfolgreich. Scope:', registration.scope);
+                        // Optional: Auf Updates prüfen
+                        registration.onupdatefound = () => {
+                            const installingWorker = registration.installing;
+                            if (installingWorker) {
+                                installingWorker.onstatechange = () => {
+                                    if (installingWorker.state === 'installed') {
+                                        if (navigator.serviceWorker.controller) {
+                                            // Neuer Inhalt ist verfügbar und wurde installiert.
+                                            // Hier könnte man dem Nutzer eine Meldung anzeigen, die Seite neu zu laden.
+                                            console.log('ServiceWorker: Neuer Inhalt ist verfügbar, bitte laden Sie die Seite neu.');
+                                            // Beispiel: this.showUpdateNotification();
+                                        } else {
+                                            // Inhalt wurde für Offline-Nutzung vorab zwischengespeichert.
+                                            console.log('ServiceWorker: Inhalt wurde für Offline-Nutzung zwischengespeichert.');
+                                        }
+                                    }
+                                };
+                            }
+                        };
+                    })
+                    .catch(error => {
+                        console.error('ServiceWorker: Registrierung fehlgeschlagen:', error);
+                    });
+            });
+        } else {
+            console.warn('ServiceWorker wird von diesem Browser nicht unterstützt.');
+        }
+    }
+
+    _setupInstallListeners() {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            this.deferredPrompt = e;
+            if (this.installButton) {
+                this.installButton.style.display = 'block';
+                console.log('ServiceWorkerManager: `beforeinstallprompt` Event gefeuert, Installations-Button angezeigt.');
+            }
+        });
+
+        if (this.installButton) {
+            this.installButton.addEventListener('click', async () => {
+                if (this.deferredPrompt) {
+                    this.installButton.style.display = 'none';
+                    this.deferredPrompt.prompt();
+                    try {
+                        const { outcome } = await this.deferredPrompt.userChoice;
+                        console.log(`ServiceWorkerManager: User response to A2HS prompt: ${outcome}`);
+                        if (outcome === 'accepted') {
+                            this._trackInstallation();
+                        }
+                    } catch (error) {
+                        console.error('ServiceWorkerManager: Fehler bei userChoice:', error);
+                    }
+                    this.deferredPrompt = null;
+                }
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            if (this.installButton) {
+                this.installButton.style.display = 'none';
+            }
+            this.deferredPrompt = null;
+            console.log('ServiceWorkerManager: PWA wurde installiert.');
+            this._trackInstallation();
+        });
+    }
+
+    _trackInstallation() {
+        // Hier könnte Tracking-Code für Analytics stehen (z.B. Google Analytics Event)
+        console.log('ServiceWorkerManager: PWA Installation getrackt.');
+        // Beispiel: gtag('event', 'install', {'event_category': 'PWA', 'event_label': 'App Installed'});
+    }
+
+    // Beispielmethode, um eine Update-Benachrichtigung anzuzeigen (optional)
+    showUpdateNotification(message = 'Eine neue Version der App ist verfügbar. Bitte laden Sie die Seite neu.') {
+        // Dies ist nur ein einfaches Beispiel. Eine robustere Lösung würde ein UI-Element verwenden.
+        const notificationDivId = 'sw-update-notification';
+        if (document.getElementById(notificationDivId)) return; // Nicht mehrfach anzeigen
+
+        const notificationDiv = document.createElement('div');
+        notificationDiv.id = notificationDivId;
+        notificationDiv.textContent = message;
+        Object.assign(notificationDiv.style, {
+            position: 'fixed',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            padding: '1em',
+            background: 'var(--primary-gradient, #333)',
+            color: 'white',
+            borderRadius: 'var(--radius-md, 8px)',
+            zIndex: '3000',
+            boxShadow: 'var(--shadow-lg, 0 10px 15px rgba(0,0,0,0.1))',
+            cursor: 'pointer'
+        });
+        notificationDiv.onclick = () => window.location.reload();
+        document.body.appendChild(notificationDiv);
+
+        setTimeout(() => {
+            if (document.getElementById(notificationDivId)) {
+                document.getElementById(notificationDivId).remove();
+            }
+        }, 10000); // Nach 10 Sekunden automatisch ausblenden
+    }
+}
+
+// Initialisieren des ServiceWorkerManagers
+const swManager = new ServiceWorkerManager('/service-worker.js');
+
+// Dynamisches Hinzufügen von CSS für die Update-Benachrichtigung (optional, falls benötigt)
+// Dies stellt sicher, dass die CSS-Variablen auch im JS verfügbar sind.
+const swStyles = document.createElement('style');
+swStyles.textContent = `
+    #${"sw-update-notification"} { /* ID direkt verwenden, um Template Literal Probleme zu umgehen */
+        background: var(--primary-gradient, linear-gradient(135deg, #40127c 0%, #1a0129 100%));
+        border-radius: var(--radius-md, 8px);
+        box-shadow: var(--shadow-lg, 0 10px 15px rgba(0,0,0,0.1));
+    }
+`;
+document.head.appendChild(swStyles);
+
+// ============================================================================
+// UniversalPWAInstaller Class
+// ============================================================================
+class UniversalPWAInstaller {
+    constructor(options = {}) {
+        this.options = Object.assign({
+            installButtonId: 'installPwaButton',
+            manualInstallModalId: 'manualInstallModal',
+            debug: false,
+            appName: 'Angelfreund',
+            appVersion: '1.0.0',
+            swPath: '/service-worker.js',
+            manifestPath: '/manifest.json',
+            iconsPath: 'assets/icons/',
+            promptDelay: 3000, // ms before showing install prompt or guide
+            enableIOSInstallPopup: true,
+            enableFirefoxInstallGuide: true,
+            enableSamsungInstallGuide: true,
+            enableDesktopInstallGuide: true, // For Chrome/Edge desktop
+            cacheStatusModalId: 'cacheStatusModal', // Point J
+            feedbackModalId: 'feedbackModal', // Point L
+            debugModalId: 'debugModal', // Point M
+        }, options);
+
+        this.installButton = document.getElementById(this.options.installButtonId);
+        this.deferredPrompt = null;
+        this.userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        this.currentBrowser = this.detectBrowser();
+        this.currentOS = this.detectOS();
+        this.installSource = 'direct'; // Default, can be overridden by URL params
+
+        this.init();
+    }
+
+    init() {
+        if (this.options.debug) console.log('UniversalPWAInstaller: Initializing...');
+        this.setupEventListeners();
+        this.initPlatformSpecificFeatures();
+        this.addCoreInstallStyles(); // Basis-Styling für Modals etc.
+        this.parseURLParameters(); // Point I
+        this.handleURLActions(); // Point I
+        this.addCacheStatusStyles(); // Point J
+        this.addFeedbackModalStyles(); // Point L
+        this.addDebugModalStyles(); // Point M
+
+        // Automatisches Anzeigen des Installations-Guides nach einer Verzögerung, falls kein Prompt kam
+        setTimeout(() => {
+            if (!this.deferredPrompt && !this.isAppInstalled()) {
+                this.triggerAppropriateInstallGuide();
+            }
+        }, this.options.promptDelay + 2000); // Etwas länger als der Prompt-Delay
+    }
+
+    initPlatformSpecificFeatures() {
+        if (this.currentOS === 'iOS') {
+            this.initIOSFeatures(); // Point E
+        }
+        if (this.currentBrowser === 'SamsungInternet') {
+            this.initSamsungFeatures(); // Point F
+        }
+        if (this.currentBrowser === 'Firefox') {
+            this.initFirefoxFeatures(); // Point G
+        }
+        // Desktop Chrome/Edge wird durch beforeinstallprompt abgedeckt, aber Fallback-Guides sind gut
+    }
+
+    setupEventListeners() {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            this.deferredPrompt = e;
+            this.enhanceBeforeInstallPrompt(e); // Point D
+            if (this.installButton) {
+                this.installButton.style.display = 'block';
+                this.installButton.onclick = () => this.promptInstall();
+            }
+            if (this.options.debug) console.log('UniversalPWAInstaller: `beforeinstallprompt` event gefeuert.');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            if (this.installButton) this.installButton.style.display = 'none';
+            this.deferredPrompt = null;
+            if (this.options.debug) console.log('UniversalPWAInstaller: PWA wurde installiert.');
+            this.showSuccessMessage('App erfolgreich installiert!');
+            // Tracking der Installation mit Quelle
+            this._trackInstallation(this.installSource); // Updated for Point I
+        });
+
+        // Fallback-Logik für den Installationsbutton, falls 'beforeinstallprompt' nicht feuert
+        if (this.installButton) {
+            this.installButton.addEventListener('click', () => {
+                if (this.deferredPrompt) {
+                    this.promptInstall();
+                } else {
+                    this.triggerAppropriateInstallGuide();
+                }
+            });
+        }
+    }
+
+    promptInstall() {
+        if (this.deferredPrompt) {
+            this.deferredPrompt.prompt();
+            this.deferredPrompt.userChoice.then(({ outcome }) => {
+                if (this.options.debug) console.log(`UniversalPWAInstaller: User response to A2HS prompt: ${outcome}`);
+                if (outcome === 'accepted') {
+                    this.showSuccessMessage('Installation gestartet!');
+                } else {
+                    this.showInstallErrorMessage('Installation abgelehnt oder abgebrochen.', false);
+                }
+                this.deferredPrompt = null;
+            }).catch(err => {
+                this.showInstallErrorMessage('Fehler beim Anzeigen des Installations-Dialogs.');
+                if (this.options.debug) console.error('UniversalPWAInstaller: Fehler bei userChoice:', err);
+            });
+        } else {
+            this.triggerAppropriateInstallGuide();
+        }
+    }
+
+    triggerAppropriateInstallGuide() {
+        if (this.isAppInstalled()) {
+            if (this.options.debug) console.log("UniversalPWAInstaller: App ist bereits installiert. Kein Guide nötig.");
+            return;
+        }
+
+        if (this.options.debug) console.log(`UniversalPWAInstaller: Triggering guide for OS: ${this.currentOS}, Browser: ${this.currentBrowser}`);
+
+        if (this.currentOS === 'iOS' && this.options.enableIOSInstallPopup) {
+            this.showIOSInstallGuide();
+        } else if (this.currentBrowser === 'Firefox' && this.options.enableFirefoxInstallGuide && this.currentOS !== 'iOS') {
+            this.showFirefoxGuide();
+        } else if (this.currentBrowser === 'SamsungInternet' && this.options.enableSamsungInstallGuide) {
+            this.showManualInstallGuide('SamsungBrowser');
+        } else if ((this.currentBrowser === 'Chrome' || this.currentBrowser === 'Edge') && this.currentOS === 'Desktop' && this.options.enableDesktopInstallGuide) {
+             this.showManualInstallGuide(this.currentBrowser); // Zeigt Chrome oder Edge Desktop Guide
+        } else if (this.options.debug) {
+            console.log("UniversalPWAInstaller: Kein spezifischer Guide für diese Kombination oder Guides deaktiviert.");
+        }
+    }
+
+    isAppInstalled() {
+        // Standard PWA display-mode check
+        if (window.matchMedia('(display-mode: standalone)').matches ||
+            window.matchMedia('(display-mode: fullscreen)').matches ||
+            window.matchMedia('(display-mode: minimal-ui)').matches) {
+            return true;
+        }
+        // iOS spezifischer Check
+        if (this.currentOS === 'iOS' && ('standalone' in window.navigator) && window.navigator.standalone === true) {
+            return true;
+        }
+        // Android Chrome/Edge (installed through WebAPK)
+        if (typeof getInstalledRelatedApps === 'function') {
+            // This is an experimental API, might not be reliable or available.
+            // navigator.getInstalledRelatedApps().then(relatedApps => {
+            // if (relatedApps.length > 0) { return true; } });
+        }
+        return false;
+    }
+
+    detectBrowser() {
+        if (/SamsungBrowser/.test(this.userAgent)) return 'SamsungInternet';
+        if (/Firefox/.test(this.userAgent) && !/Seamonkey/.test(this.userAgent)) return 'Firefox';
+        if (/Edg/.test(this.userAgent)) return 'Edge'; // Edge Chromium and old Edge
+        if (/Chrome/.test(this.userAgent) && !/Chromium/.test(this.userAgent) && !/OPR/.test(this.userAgent) && !/Edg/.test(this.userAgent)) return 'Chrome';
+        if (/CriOS/.test(this.userAgent)) return 'ChromeiOS'; // Chrome on iOS
+        if (/FxiOS/.test(this.userAgent)) return 'FirefoxiOS'; // Firefox on iOS
+        if (/Safari/.test(this.userAgent) && !/Chrome/.test(this.userAgent) && !/Chromium/.test(this.userAgent) && !/Edg/.test(this.userAgent) && !/OPR/.test(this.userAgent) && !/SamsungBrowser/.test(this.userAgent)) return 'Safari';
+        if (/OPR/.test(this.userAgent) || /Opera/.test(this.userAgent)) return 'Opera';
+        return 'Unknown';
+    }
+
+    detectOS() {
+        if (/iPad|iPhone|iPod/.test(this.userAgent) && !window.MSStream) return 'iOS';
+        if (/android/i.test(this.userAgent)) return 'Android';
+        if (/Win/.test(this.userAgent)) return 'Windows';
+        if (/Mac/.test(this.userAgent)) return 'MacOS';
+        if (/Linux/.test(this.userAgent) && !/android/i.test(this.userAgent)) return 'Linux';
+        return 'Unknown';
+    }
+
+    createInstallModal(title, contentHTML, modalId = this.options.manualInstallModalId) {
+        this.closeCurrentModal(); // Close any existing modal first
+
+        const modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'pwa-install-modal active'; // Add 'active' to show immediately
+
+        const modalContent = document.createElement('div');
+        modalContent.className = 'pwa-install-modal-content';
+
+        const header = document.createElement('div');
+        header.className = 'pwa-install-modal-header';
+        header.innerHTML = `<h2>${title}</h2><button class="pwa-install-close-btn">&times;</button>`;
+
+        const body = document.createElement('div');
+        body.className = 'pwa-install-modal-body';
+        body.innerHTML = contentHTML;
+
+        modalContent.appendChild(header);
+        modalContent.appendChild(body);
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        modal.querySelector('.pwa-install-close-btn').onclick = () => this.closeCurrentModal(modalId);
+        modal.onclick = (e) => { if (e.target === modal) this.closeCurrentModal(modalId); }; // Backdrop click
+        return modal;
+    }
+
+    addCoreInstallStyles() {
+        const styleId = 'pwa-install-core-styles';
+        if (document.getElementById(styleId)) return;
+        const styles = `
+            .pwa-install-modal { display: none; position: fixed; z-index: 2500; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); animation: pwaModalFadeIn 0.3s ease-out; }
+            .pwa-install-modal.active { display: flex; align-items: center; justify-content: center; }
+            .pwa-install-modal-content { background-color: var(--bg-primary, #fff); margin: auto; padding: 20px; border-radius: var(--radius-lg, 16px); width: 90%; max-width: 500px; box-shadow: var(--shadow-xl, 0 20px 25px rgba(0,0,0,0.1)); animation: pwaModalSlideUp 0.3s ease-out; position: relative; color: var(--text-primary, #000); }
+            .pwa-install-modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--bg-tertiary, #ccc); }
+            .pwa-install-modal-header h2 { margin: 0; font-size: 1.5em; color: var(--text-primary, #000); }
+            .pwa-install-close-btn { background: none; border: none; font-size: 1.8em; cursor: pointer; color: var(--text-secondary, #555); padding: 5px; line-height: 1; }
+            .pwa-install-close-btn:hover { color: var(--text-primary, #000); }
+            .pwa-install-modal-body p { margin-bottom: 1em; line-height: 1.6; }
+            .pwa-install-modal-body ol, .pwa-install-modal-body ul { margin-left: 20px; margin-bottom: 1em; }
+            .pwa-install-modal-body li { margin-bottom: 0.5em; }
+            .pwa-install-modal-body strong { font-weight: bold; }
+            .pwa-install-modal-body .icon { display: inline-block; width: 1em; height: 1em; margin: 0 0.2em; vertical-align: text-bottom; }
+            .pwa-install-modal .btn-primary-action { display: block; width: 100%; padding: 0.75rem 1.5rem; background: var(--primary-gradient); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 600; text-align: center; margin-top: 1rem; }
+            .pwa-install-modal .btn-primary-action:hover { opacity: 0.9; }
+            @keyframes pwaModalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes pwaModalSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        `;
+        const styleSheet = document.createElement("style");
+        styleSheet.id = styleId;
+        styleSheet.type = "text/css";
+        styleSheet.innerText = styles;
+        document.head.appendChild(styleSheet);
+    }
+
+    // --- Point D: beforeinstallprompt Enhancements ---
+    enhanceBeforeInstallPrompt(event) {
+        if (this.options.debug) console.log('UniversalPWAInstaller (enhanceBeforeInstallPrompt): beforeinstallprompt captured, evaluating readiness & timing.');
+        this.validateInstallationReadiness(this.currentBrowser);
+        this.evaluatePromptTiming(event);
+    }
+
+    validateInstallationReadiness(browserName) {
+        if (this.options.debug) console.log(`UniversalPWAInstaller (validateInstallationReadiness): Validating for ${browserName}.`);
+        // Placeholder for more complex checks if needed (e.g., specific feature support)
+        if (this.currentOS === 'Desktop' && (browserName === 'Chrome' || browserName === 'Edge')) {
+             if (!this.deferredPrompt) { // Should not happen if called from enhanceBeforeInstallPrompt
+                if (this.options.debug) console.warn("UniversalPWAInstaller (validateInstallationReadiness): Desktop Chrome/Edge but no deferredPrompt. Manual guide might be needed.");
+            }
+        }
+    }
+
+    evaluatePromptTiming(event) {
+        // Example: Only show prompt if user has interacted with the site for a bit
+        // For now, we assume the default browser behavior for timing is fine,
+        // but this method could be expanded to delay the `event.prompt()` call.
+        if (this.options.debug) console.log("UniversalPWAInstaller (evaluatePromptTiming): Prompt timing evaluation (currently default).");
+        // If custom timing logic was needed, one might store `event` and call `event.prompt()` later.
+    }
+
+    showManualInstallGuide(browserOrPlatform) {
+        if (this.isAppInstalled()) return;
+        if (this.options.debug) console.log(`UniversalPWAInstaller (showManualInstallGuide): Showing guide for ${browserOrPlatform}.`);
+        let title = `${this.options.appName} App installieren`;
+        let content = '';
+
+        switch(browserOrPlatform) {
+            case 'Chrome': content = this.createChromeGuideContent('Desktop'); break;
+            case 'Edge': content = this.createEdgeGuideContent('Desktop'); break;
+            case 'SamsungBrowser': content = this.createSamsungGuideContent(); break;
+            case 'Opera': content = this.createOperaGuideContent('Desktop'); break;
+            // iOS and Firefox have their own dedicated methods (showIOSInstallGuide, showFirefoxGuide)
+            default:
+                if (this.options.debug) console.log(`UniversalPWAInstaller (showManualInstallGuide): No specific guide for ${browserOrPlatform}.`);
+                return; // No generic guide for now, or could show a very basic one.
+        }
+        if (content) this.createInstallModal(title, content);
+    }
+
+    createChromeGuideContent(platform = 'Desktop') {
+        if (platform === 'Desktop') {
+            return `
+                <p>So installieren Sie die ${this.options.appName}-App auf Ihrem Computer:</p>
+                <ol>
+                    <li>Klicken Sie auf die drei Punkte <i class="fas fa-ellipsis-v icon"></i> oben rechts im Browser.</li>
+                    <li>Wählen Sie "<strong>${this.options.appName} installieren...</strong>" oder "<strong>App installieren...</strong>".</li>
+                    <li>Folgen Sie den Anweisungen auf dem Bildschirm.</li>
+                </ol>
+                <p>Die App wird dann zu Ihrem Startmenü/Launchpad hinzugefügt.</p>
+            `;
+        }
+        // Android Chrome is usually handled by beforeinstallprompt, but a manual guide could be:
+        return `
+            <p>So installieren Sie die ${this.options.appName}-App auf Ihrem Android-Gerät:</p>
+            <ol>
+                <li>Tippen Sie auf die drei Punkte <i class="fas fa-ellipsis-v icon"></i> oben rechts im Browser.</li>
+                <li>Wählen Sie "<strong>Zum Startbildschirm hinzufügen</strong>" oder "<strong>App installieren</strong>".</li>
+                <li>Bestätigen Sie im Dialogfeld.</li>
+            </ol>
+        `;
+    }
+
+    createEdgeGuideContent(platform = 'Desktop') {
+         if (platform === 'Desktop') {
+            return `
+                <p>So installieren Sie die ${this.options.appName}-App mit Microsoft Edge:</p>
+                <ol>
+                    <li>Klicken Sie auf die drei Punkte <i class="fas fa-ellipsis-h icon"></i> oben rechts im Browser.</li>
+                    <li>Gehen Sie zu "<strong>Apps</strong>".</li>
+                    <li>Wählen Sie "<strong>Diese Website als App installieren</strong>".</li>
+                    <li>Geben Sie der App einen Namen (z.B. "${this.options.appName}") und klicken Sie auf "Installieren".</li>
+                </ol>
+            `;
+        }
+        // Mobile Edge (Android)
+        return `
+            <p>So installieren Sie die ${this.options.appName}-App mit Microsoft Edge auf Android:</p>
+            <ol>
+                <li>Tippen Sie auf die drei Punkte <i class="fas fa-ellipsis-h icon"></i> in der unteren Menüleiste.</li>
+                <li>Wischen Sie nach links bei den Optionen und wählen Sie "<strong>Zum Telefon hinzufügen</strong>".</li>
+                <li>Bestätigen Sie die Installation.</li>
+            </ol>
+        `;
+    }
+    createSamsungGuideContent() { // Updated to match Point F
+        let versionInfo = this.checkSamsungVersion();
+        let issues = this.detectSamsungIssues();
+        let content = `
+            <p>So installieren Sie die ${this.options.appName}-App mit Samsung Internet:</p>
+            <ol>
+                <li>Tippen Sie auf das Menü-Symbol <i class="fas fa-bars icon"></i> (normalerweise unten rechts).</li>
+                <li>Wählen Sie "<strong>Seite hinzufügen zu</strong>" oder "<strong>Aktuelle Seite hinzufügen</strong>".</li>
+                <li>Tippen Sie auf "<strong>Startbildschirm</strong>".</li>
+                <li>Bestätigen Sie mit "Hinzufügen".</li>
+            </ol>
+            <p>Samsung Internet Version: ${versionInfo.major}.${versionInfo.minor || 'x'}</p>`;
+
+        if (issues.length > 0) {
+            content += `<p style="color:orange;margin-top:10px;"><strong>Hinweis:</strong> Es wurden Probleme mit Ihrer Samsung Internet Version festgestellt:</p><ul>`;
+            issues.forEach(issue => content += `<li>${issue}</li>`);
+            content += `</ul>`;
+            if (this.currentOS === "Android") { // Nur auf Android Chrome vorschlagen
+                content += `<p>Für eine bessere Erfahrung können Sie versuchen, die Seite <button onclick="window.pwaInstaller.openInChrome()" class="btn-primary-action" style="display:inline-block;padding:0.3rem 0.6rem;font-size:0.9em;">in Chrome zu öffnen</button>.</p>`;
+            }
+        }
+        return content;
+    }
+
+    createOperaGuideContent(platform = 'Desktop') {
+        // Opera Desktop
+        if (platform === 'Desktop') {
+             return `
+                <p>So installieren Sie die ${this.options.appName}-App mit Opera auf dem Desktop:</p>
+                <ol>
+                    <li>Suchen Sie nach einem kleinen Icon <i class="fas fa-plus-square icon"></i> (oft rechts in der Adressleiste), das auf die Installationsmöglichkeit hinweist.</li>
+                    <li>Klicken Sie darauf und wählen Sie "<strong>Installieren</strong>".</li>
+                </ol>
+                <p>Alternativ, wenn das Menü "Setup" <i class="fas fa-sliders-h icon"></i> (oft links in der Sidebar) verfügbar ist:</p>
+                <ol>
+                    <li>Öffnen Sie das "Einfache Setup"-Menü.</li>
+                    <li>Suchen Sie nach einem Abschnitt für PWAs oder "Diese Seite installieren".</li>
+                </ol>
+            `;
+        }
+        // Opera Mobile (Android)
+        return `
+            <p>So installieren Sie die ${this.options.appName}-App mit Opera Mobile:</p>
+            <ol>
+                <li>Tippen Sie auf das Opera-Menü-Icon <i class="fas fa-opera icon"></i> (oft unten rechts).</li>
+                <li>Wählen Sie "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
+                <li>Bestätigen Sie mit "Hinzufügen".</li>
+            </ol>
+        `;
+    }
+    setupFallbackPromptDetection() { /* Currently not implemented, could involve timers */ }
+
+
+    // --- Point E: iOS Safari ---
+    initIOSFeatures() {
+        if (this.options.debug) console.log("UniversalPWAInstaller (initIOSFeatures): Initializing iOS specific features.");
+        this.addIOSInstallStyles();
+        this.validateIOSMetaTags();
+        this.setupIOSSpecificHandlers();
+        // Check installation capability on load or after a delay
+        setTimeout(() => this.checkIOSInstallationCapability(), this.options.promptDelay);
+    }
+
+    addIOSInstallStyles() {
+        const styleId = 'pwa-ios-install-styles';
+        if (document.getElementById(styleId)) return;
+        const styles = `
+            .ios-install-popup { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--bg-secondary, #f0f0f0); color: var(--text-primary, #000); padding: 15px; box-shadow: var(--shadow-lg, 0 -2px 10px rgba(0,0,0,0.1)); z-index: 2800; transform: translateY(100%); animation: slideUpIn 0.5s forwards; border-top: 1px solid var(--bg-tertiary, #ccc); }
+            .ios-install-popup p { margin: 0 0 10px 0; font-size: 0.9em; }
+            .ios-install-popup strong { font-weight: bold; }
+            .ios-install-popup .ios-share-icon { display: inline-block; width: 1.2em; height: 1.2em; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23007AFF'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v5h3l-4 4-4-4h3V7z'/%3E%3C/svg%3E"); /* Simplified Share Icon - replace with actual or FontAwesome */ vertical-align: middle; margin: 0 0.2em; } /* Needs a proper SVG or icon */
+            .ios-install-popup .ios-add-home-icon { display: inline-block; width: 1.2em; height: 1.2em; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23007AFF'%3E%3Cpath d='M12 5.99L19.53 9.83V18h-15V9.83L12 5.99M12 3L2 9v12h20V9l-10-6z'/%3E%3C/svg%3E"); /* Simplified Plus Icon - replace */ vertical-align: middle; margin: 0 0.2em; }
+            .ios-install-close { position: absolute; top: 5px; right: 10px; background:none; border:none; font-size:1.5em; color: var(--text-secondary, #777); cursor:pointer; }
+            @keyframes slideUpIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        `;
+        const styleSheet = document.createElement("style");
+        styleSheet.id = styleId;
+        styleSheet.type = "text/css";
+        styleSheet.innerText = styles;
+        document.head.appendChild(styleSheet);
+    }
+
+    showIOSInstallGuide() {
+        if (this.isAppInstalled() || !this.options.enableIOSInstallPopup || document.getElementById('iosInstallPopup')) return;
+
+        const versionInfo = this.getIOSVersion();
+        if (versionInfo && versionInfo.major < 11) { // Assuming PWA support is better on iOS 11.3+
+            if (this.options.debug) console.log("UniversalPWAInstaller (showIOSInstallGuide): iOS version too old for reliable PWA features.");
+            // Optionally show a different message or nothing.
+            return;
+        }
+
+        const content = this.createIOSInstallGuideContent();
+        const popup = document.createElement('div');
+        popup.id = 'iosInstallPopup';
+        popup.className = 'ios-install-popup';
+        popup.innerHTML = content;
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'ios-install-close';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = () => popup.remove();
+        popup.prepend(closeBtn); // Add close button to the top
+
+        document.body.appendChild(popup);
+        // Auto-hide after some time?
+        // setTimeout(() => { if (popup && popup.parentNode) popup.remove(); }, 30000);
+    }
+
+    createIOSInstallGuideContent() {
+        return `
+            <p>Um die <strong>${this.options.appName}</strong> App auf Ihrem iPhone/iPad zu installieren:</p>
+            <p>
+                1. Tippen Sie auf das Teilen-Symbol <i class="fas fa-share-square icon"></i> (oder ein ähnliches Icon wie <span class="ios-share-icon"></span>) in der Browserleiste.
+            </p>
+            <p>
+                2. Scrollen Sie nach unten und wählen Sie "<strong>Zum Home-Bildschirm</strong>" <i class="fas fa-plus-square icon"></i> (oder <span class="ios-add-home-icon"></span>).
+            </p>
+            <p>3. Tippen Sie auf "Hinzufügen".</p>
+        `;
+    }
+    getIOSVersion() {
+        if (this.currentOS !== 'iOS') return null;
+        const match = this.userAgent.match(/OS (\d+)_?(\d+)?_?(\d+)? like Mac OS X/i);
+        if (match) {
+            return {
+                major: parseInt(match[1], 10),
+                minor: match[2] ? parseInt(match[2], 10) : 0,
+                patch: match[3] ? parseInt(match[3], 10) : 0
+            };
+        }
+        return null;
+    }
+    checkIOSVersion(minMajor = 11, minMinor = 3) { /* Deprecated by getIOSVersion returning object */ return false; }
+
+    async testIOSInstallation() { /* Placeholder for potential future tests */ }
+
+    checkIOSInstallationCapability() {
+        if (this.currentOS !== 'iOS' || !this.options.enableIOSInstallPopup) return;
+        if (this.isAppInstalled()) {
+             if (this.options.debug) console.log("UniversalPWAInstaller (checkIOSInstallationCapability): iOS App ist bereits installiert.");
+             return; // Already installed
+        }
+        // Basic check: is it Safari and not in standalone mode?
+        const isSafari = this.currentBrowser === 'Safari' || (this.currentBrowser === 'Unknown' && this.currentOS === 'iOS'); // Often Safari is 'Unknown'
+        const isInStandalone = ('standalone' in window.navigator) && window.navigator.standalone;
+
+        if (isSafari && !isInStandalone) {
+            // Show guide after a delay if not installed
+            // setTimeout(() => {
+            // if (!this.isAppInstalled()) this.showIOSInstallGuide();
+            // }, this.options.promptDelay);
+            // The global timeout in init() handles this now.
+        } else if (this.options.debug) {
+            console.log(`UniversalPWAInstaller (checkIOSInstallationCapability): Not Safari or already standalone. Safari: ${isSafari}, Standalone: ${isInStandalone}`);
+        }
+    }
+    setupIOSSpecificHandlers() { /* Placeholder if specific event handlers for iOS are needed */ }
+    validateIOSMetaTags() {
+        const requiredMeta = [
+            { name: 'apple-mobile-web-app-capable', content: 'yes' },
+            { name: 'apple-mobile-web-app-title', content: this.options.appName }, // Check against configured appName
+            // { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }, // Content can vary
+        ];
+        let allFound = true;
+        requiredMeta.forEach(rm => {
+            const el = document.querySelector(`meta[name="${rm.name}"]`);
+            if (!el || (rm.content && el.content !== rm.content)) {
+                if (this.options.debug) console.warn(`UniversalPWAInstaller (validateIOSMetaTags): Fehlendes oder falsches iOS Meta-Tag: ${rm.name}. Erwartet: ${rm.content}, Gefunden: ${el ? el.content : 'nicht vorhanden'}`);
+                allFound = false;
+            }
+        });
+        if (allFound && this.options.debug) console.log("UniversalPWAInstaller (validateIOSMetaTags): Wichtige iOS Meta-Tags scheinen vorhanden zu sein.");
+        return allFound;
+    }
+
+    // --- Point F: Samsung Internet ---
+    initSamsungFeatures() {
+        if (this.options.debug) console.log("UniversalPWAInstaller (initSamsungFeatures): Initializing Samsung Internet specific features.");
+        this.addSamsungInstallStyles();
+        this.fixSamsungDisplayMode();
+        this.setupSamsungAmbientBadging();
+        //setTimeout(() => this.testSamsungInstallation(), this.options.promptDelay + 1000);
+    }
+    addSamsungInstallStyles() { /* Similar to addCoreInstallStyles, but for Samsung specific modal parts if needed */ }
+    checkSamsungVersion() {
+        if (this.currentBrowser !== 'SamsungInternet') return { major: 0, minor: 0, full: 'N/A' };
+        const match = this.userAgent.match(/SamsungBrowser\/(\d+)\.?(\d+)?/);
+        if (match) {
+            return {
+                major: parseInt(match[1], 10),
+                minor: match[2] ? parseInt(match[2], 10) : 0,
+                full: match[0]
+            };
+        }
+        return { major: 0, minor: 0, full: 'N/A' };
+    }
+    detectSamsungIssues() {
+        const version = this.checkSamsungVersion();
+        const issues = [];
+        if (version.major > 0 && version.major < 10) {
+            issues.push(`Ältere Version (${version.major}) kann eingeschränkte PWA-Funktionen haben.`);
+        }
+        // Potenziell weitere Checks hier, z.B. für bekannte Bugs in bestimmten Versionen
+        return issues;
+    }
+    async testSamsungInstallation() {
+        if (this.currentBrowser !== 'SamsungInternet' || !this.options.enableSamsungInstallGuide) return;
+        if (this.isAppInstalled()) return;
+
+        // Samsung Internet unterstützt 'beforeinstallprompt' gut.
+        // Dieser Test ist eher ein Fallback oder für Debugging.
+        if (!this.deferredPrompt) {
+            if (this.options.debug) console.log("UniversalPWAInstaller (testSamsungInstallation): Kein deferredPrompt. Zeige manuellen Guide für Samsung.");
+            // this.showManualInstallGuide('SamsungBrowser'); // Wird jetzt von triggerAppropriateInstallGuide abgedeckt
+        }
+    }
+    openInChrome() {
+        // Erstellt einen Intent-Link, um die aktuelle Seite in Chrome zu öffnen
+        const currentUrl = window.location.href;
+        const intentUrl = `intent://${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=googlechrome;package=com.android.chrome;end`;
+        window.location.href = intentUrl;
+        if (this.options.debug) console.log("UniversalPWAInstaller (openInChrome): Versuch, in Chrome zu öffnen mit URL: " + intentUrl);
+    }
+    setupSamsungAmbientBadging() { /* Placeholder: Samsung hat eigene Badging-APIs oder Verhaltensweisen, die hier berücksichtigt werden könnten */ }
+    fixSamsungDisplayMode() { /* Placeholder: Bekannte Probleme mit display mode auf Samsung Internet könnten hier behandelt werden */ }
+
+
+    // --- Point G: Firefox ---
+    initFirefoxFeatures() {
+        if (this.options.debug) console.log("UniversalPWAInstaller (initFirefoxFeatures): Initializing Firefox specific features.");
+        this.addFirefoxInstallStyles();
+        // setTimeout(() => {
+        // if (!this.isAppInstalled() && this.options.enableFirefoxInstallGuide) this.showFirefoxGuide();
+        // }, this.options.promptDelay); // Wird jetzt von triggerAppropriateInstallGuide abgedeckt
+    }
+    addFirefoxInstallStyles() { /* Spezifische Styles für Firefox Guide Modal */ }
+    showFirefoxGuide() {
+        if (this.isAppInstalled() || this.currentBrowser !== 'Firefox' || this.currentOS === 'iOS') return; // Firefox on iOS uses WebKit.
+        if (this.options.debug) console.log("UniversalPWAInstaller (showFirefoxGuide): Zeige Firefox Installationsanleitung.");
+
+        const content = this.createFirefoxGuideContent();
+        this.createInstallModal(`${this.options.appName} zu Firefox hinzufügen`, content);
+    }
+    createFirefoxGuideContent() {
+        let content = `<p>So fügen Sie ${this.options.appName} zu Ihrem Startbildschirm oder Desktop hinzu:</p>`;
+        if (this.currentOS === 'Android') {
+            content += `
+                <ol>
+                    <li>Tippen Sie auf das Menü-Symbol <i class="fas fa-ellipsis-v icon"></i> (drei Punkte) in der Adressleiste.</li>
+                    <li>Wählen Sie "<strong>Installieren</strong>" oder "<strong>Seite</strong>" und dann "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
+                    <li>Folgen Sie den Anweisungen.</li>
+                </ol>
+            `;
+        } else { // Desktop Firefox
+            content += `
+                <p>Firefox auf dem Desktop hat keine direkte "App installieren"-Funktion wie Chrome.</p>
+                <p>Sie können jedoch ein Lesezeichen erstellen oder die Seite an Ihre Taskleiste anheften:</p>
+                <ul>
+                    <li><strong>Lesezeichen:</strong> Drücken Sie Strg+D (Windows/Linux) oder Cmd+D (Mac).</li>
+                    <li><strong>Manuell an Taskleiste (Windows):</strong>
+                        <ol>
+                            <li>Erstellen Sie eine Verknüpfung zur Webseite auf dem Desktop.</li>
+                            <li>Klicken Sie mit der rechten Maustaste auf die Verknüpfung und wählen Sie "An Taskleiste anheften".</li>
+                        </ol>
+                    </li>
+                </ul>
+                <p>Für ein App-ähnliches Erlebnis könnten Sie ein Add-on wie "Progressive Web Apps for Firefox" in Betracht ziehen.</p>
+            `;
+        }
+        return content;
+    }
+
+    // --- Point H: Edge Mobile ---
+    isProblematicEdgeVersion() {
+        if (this.currentBrowser !== 'Edge' || this.currentOS !== 'Android') return false;
+        // Beispiel: Angenommen, Versionen unter 80 hatten Probleme
+        const edgeVersionMatch = this.userAgent.match(/EdgA\/(\d+)\./); // EdgA für Edge Android
+        if (edgeVersionMatch && parseInt(edgeVersionMatch[1], 10) < 80) {
+            if (this.options.debug) console.warn("UniversalPWAInstaller (isProblematicEdgeVersion): Potenziell problematische Edge Mobile Version erkannt.");
+            return true;
+        }
+        return false;
+    }
+
+    // --- Point I: URL Parameters ---
+    parseURLParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        this.installSource = urlParams.get('utm_source') || urlParams.get('source') || 'direct';
+        const pwaAction = urlParams.get('pwa_action');
+
+        if (this.options.debug) {
+            console.log(`UniversalPWAInstaller (parseURLParameters): Install source: ${this.installSource}`);
+            if (pwaAction) console.log(`UniversalPWAInstaller (parseURLParameters): PWA Action: ${pwaAction}`);
+        }
+        return { source: this.installSource, action: pwaAction };
+    }
+
+    handleURLActions() {
+        const params = this.parseURLParameters();
+        if (params.action === 'install') {
+            // Verzögere den Prompt leicht, um sicherzustellen, dass alles geladen ist
+            setTimeout(() => {
+                if (this.deferredPrompt) {
+                    this.promptInstall();
+                } else if (!this.isAppInstalled()) {
+                    this.triggerAppropriateInstallGuide();
+                }
+            }, 500);
+        }
+        this.trackInstallationSourceFromURL(); // Immer Quelle tracken, falls vorhanden
+        // Share Target Handling (Basis)
+        if (window.location.search.includes('shared_title') || window.location.search.includes('shared_url')) {
+            this.handleShareTarget();
+        }
+    }
+
+    handleShareTarget() {
+        const params = new URLSearchParams(window.location.search);
+        const title = params.get('shared_title');
+        const text = params.get('shared_text');
+        const url = params.get('shared_url');
+
+        if (title || text || url) {
+            if (this.options.debug) console.log('UniversalPWAInstaller (handleShareTarget): Share Target Daten empfangen:', { title, text, url });
+            // Hier die Logik implementieren, was mit den geteilten Daten passieren soll.
+            // Z.B. in einem Modal anzeigen, in einem Formular vorbefüllen etc.
+            // Beispiel:
+            // const modalTitle = title || 'Geteilter Inhalt';
+            // let modalContent = '';
+            // if (title) modalContent += `<p><strong>Titel:</strong> ${title}</p>`;
+            // if (text) modalContent += `<p><strong>Text:</strong> ${text}</p>`;
+            // if (url) modalContent += `<p><strong>URL:</strong> <a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a></p>`;
+            // this.createInstallModal(modalTitle, modalContent, 'sharedContentModal');
+
+            // Wichtig: Die URL sollte danach "aufgeräumt" werden, um zu verhindern,
+            // dass die Share-Parameter bei jedem Reload neu verarbeitet werden.
+            // history.replaceState(null, '', window.location.pathname); // Ohne Query-Parameter
+        }
+    }
+    _trackInstallation(source = 'unknown') { // Private Methode für Tracking
+        if (this.options.debug) console.log(`UniversalPWAInstaller (_trackInstallation): App installed. Source: ${source}`);
+        // Hier Analytics-Code einfügen, z.B.:
+        // if (typeof gtag === 'function') {
+        //     gtag('event', 'pwa_install_success', {
+        //         'event_category': 'PWA Engagement',
+        //         'event_label': source,
+        //         'value': 1
+        //     });
+        // }
+    }
+    trackInstallationSourceFromURL() { /* Jetzt Teil von _trackInstallation, das bei appinstalled aufgerufen wird */ }
+
+
+    // --- Point J: Offline Functionality ---
+    addCacheStatusStyles() {
+        const styleId = 'pwa-cache-status-styles';
+        if (document.getElementById(styleId)) return;
+        const styles = `
+            /* Styles für Cache Status Modal - ähnlich wie pwa-install-modal */
+            #${this.options.cacheStatusModalId} .pwa-install-modal-body ul { list-style-type: none; padding-left: 0; }
+            #${this.options.cacheStatusModalId} .pwa-install-modal-body li { padding: 5px 0; border-bottom: 1px solid var(--bg-tertiary, #eee); }
+            #${this.options.cacheStatusModalId} .pwa-install-modal-body li:last-child { border-bottom: none; }
+            #${this.options.cacheStatusModalId} .cache-actions button { margin-top: 10px; margin-right: 10px; }
+        `;
+        const styleSheet = document.createElement("style");
+        styleSheet.id = styleId;
+        styleSheet.type = "text/css";
+        styleSheet.innerText = styles;
+        document.head.appendChild(styleSheet);
+    }
+    async triggerBackgroundSync(tagName = 'pwa-content-sync') {
+        if (!('serviceWorker' in navigator) || !('SyncManager' in window)) {
+            if (this.options.debug) console.warn("UniversalPWAInstaller (triggerBackgroundSync): Background Sync nicht unterstützt.");
+            this.showInstallErrorMessage("Hintergrund-Synchronisation wird von Ihrem Browser nicht unterstützt.", false);
+            return;
+        }
+        try {
+            const swRegistration = await navigator.serviceWorker.ready;
+            await swRegistration.sync.register(tagName);
+            if (this.options.debug) console.log(`UniversalPWAInstaller (triggerBackgroundSync): Sync-Tag '${tagName}' registriert.`);
+            this.showSuccessMessage("Daten-Synchronisation im Hintergrund gestartet. Inhalte sind bald aktuell.");
+        } catch (error) {
+            if (this.options.debug) console.error("UniversalPWAInstaller (triggerBackgroundSync): Fehler bei der Registrierung des Sync-Tags:", error);
+            this.showInstallErrorMessage("Fehler beim Start der Hintergrund-Synchronisation.");
+        }
+    }
+
+    async showCacheStatusModal() {
+        if (!('caches' in window)) {
+            this.showInstallErrorMessage("Cache API nicht verfügbar in diesem Browser.", false);
+            return;
+        }
+        let content = '<h4>Zwischengespeicherte Inhalte:</h4>';
+        try {
+            const cacheNames = await caches.keys();
+            if (cacheNames.length === 0) {
+                content += '<p>Keine Caches gefunden.</p>';
+            } else {
+                content += '<ul>';
+                for (const cacheName of cacheNames) {
+                    content += `<li><strong>${cacheName}:</strong> `;
+                    const cache = await caches.open(cacheName);
+                    const requests = await cache.keys();
+                    content += `${requests.length} Element(e)</li>`;
+                }
+                content += '</ul>';
+            }
+        } catch (error) {
+            content += '<p>Fehler beim Abrufen der Cache-Informationen.</p>';
+            if (this.options.debug) console.error("UniversalPWAInstaller (showCacheStatusModal): Fehler:", error);
+        }
+        content += `<div class="cache-actions">
+                        <button onclick="window.pwaInstaller.clearAppCachesDebug(true)" class="btn btn-danger btn-sm">Alle App-Caches löschen</button>
+                        <button onclick="window.pwaInstaller.triggerBackgroundSync()" class="btn btn-sm">Sync erzwingen</button>
+                    </div>`;
+        this.createInstallModal("Cache Status", content, this.options.cacheStatusModalId);
+    }
+
+
+    // --- Point L: Success/Error Handling ---
+    addFeedbackModalStyles() {
+        const styleId = 'pwa-feedback-modal-styles';
+        if (document.getElementById(styleId)) return;
+        const styles = `
+            #${this.options.feedbackModalId} .pwa-install-modal-content { border-left: 5px solid var(--primary-gradient, blue); }
+            #${this.options.feedbackModalId}.success .pwa-install-modal-content { border-left-color: var(--success-gradient, green); }
+            #${this.options.feedbackModalId}.error .pwa-install-modal-content { border-left-color: var(--danger-gradient, red); }
+            #${this.options.feedbackModalId} .pwa-install-modal-body p { font-size: 1.1em; text-align: center; }
+            #${this.options.feedbackModalId} .pwa-install-modal-header h2 { font-size: 1.3em; }
+        `;
+        const styleSheet = document.createElement("style");
+        styleSheet.id = styleId;
+        styleSheet.type = "text/css";
+        styleSheet.innerText = styles;
+        document.head.appendChild(styleSheet);
+    }
+
+    showSuccessMessage(message, autoCloseDelay = 3000) {
+        const modal = this.createInstallModal("Erfolg", `<p>${message}</p>`, this.options.feedbackModalId);
+        modal.classList.add('success');
+        if (autoCloseDelay > 0) {
+            setTimeout(() => this.closeCurrentModal(this.options.feedbackModalId), autoCloseDelay);
+        }
+    }
+
+    showInstallErrorMessage(message, isCritical = true, autoCloseDelay = 5000) {
+        // isCritical könnte verwendet werden, um den Nutzer zu weiteren Schritten zu leiten
+        const modal = this.createInstallModal("Hinweis", `<p>${message}</p>`, this.options.feedbackModalId);
+        modal.classList.add('error');
+         if (autoCloseDelay > 0 && !isCritical) { // Nur automatisch schließen, wenn nicht kritisch
+            setTimeout(() => this.closeCurrentModal(this.options.feedbackModalId), autoCloseDelay);
+        }
+    }
+
+    closeCurrentModal(modalId = null) {
+        const modals = modalId ? [document.getElementById(modalId)] : document.querySelectorAll('.pwa-install-modal.active, .ios-install-popup');
+        modals.forEach(modal => {
+            if (modal) {
+                modal.classList.remove('active');
+                // Allow animation to finish before removing
+                setTimeout(() => { if (modal.parentNode) modal.remove(); }, 300);
+            }
+        });
+    }
+
+    // --- Point M: Debugging Tools ---
+    addDebugModalStyles() {
+        const styleId = 'pwa-debug-modal-styles';
+        if (document.getElementById(styleId)) return;
+        const styles = `
+            #${this.options.debugModalId} .pwa-install-modal-body pre { background-color: var(--bg-tertiary, #eee); padding: 10px; border-radius: var(--radius-sm, 4px); max-height: 300px; overflow-y: auto; font-size: 0.8em; color: var(--text-secondary, #333); }
+            #pwaDebugControls { position: fixed; bottom: 10px; left: 10px; z-index: 3500; background: rgba(0,0,0,0.7); padding: 5px; border-radius: 5px; display: flex; gap: 5px; }
+            #pwaDebugControls button { background: #fff; color: #000; border: 1px solid #ccc; font-size: 0.7rem; padding: 3px 6px; cursor: pointer; border-radius: 3px;}
+        `;
+        const styleSheet = document.createElement("style");
+        styleSheet.id = styleId;
+        styleSheet.type = "text/css";
+        styleSheet.innerText = styles;
+        document.head.appendChild(styleSheet);
+    }
+
+    showPWAStatusDebug() {
+        let content = '<h4>PWA Status:</h4>';
+        content += `<pre>User Agent: ${this.userAgent}\n`;
+        content += `Browser: ${this.currentBrowser}\n`;
+        content += `OS: ${this.currentOS}\n`;
+        content += `App Installiert: ${this.isAppInstalled()}\n`;
+        content += `Install Button Sichtbar: ${this.installButton ? this.installButton.style.display !== 'none' : 'N/A'}\n`;
+        content += `Deferred Prompt vorhanden: ${!!this.deferredPrompt}\n`;
+        content += `Manifest Path: ${this.options.manifestPath}\n`;
+        content += `Service Worker Path: ${this.options.swPath}\n`;
+        content += `Installationsquelle (geschätzt): ${this.installSource}</pre>`;
+        content += `<p><strong>Meta Tags (iOS):</strong></p><pre>`;
+        ['apple-mobile-web-app-capable', 'apple-mobile-web-app-title', 'apple-mobile-web-app-status-bar-style'].forEach(name => {
+            const el = document.querySelector(`meta[name="${name}"]`);
+            content += `${name}: ${el ? el.content : 'Nicht gefunden'}\n`;
+        });
+        content += `</pre>`;
+        this.createInstallModal("PWA Debug Status", content, this.options.debugModalId);
+    }
+
+    showBrowserCompatibilityDebug() {
+        let content = '<h4>Browser Kompatibilität:</h4>';
+        content += `<p><strong>Service Worker:</strong> ${'serviceWorker' in navigator ? 'Ja' : 'Nein'}</p>`;
+        content += `<p><strong>Cache API:</strong> ${'caches' in window ? 'Ja' : 'Nein'}</p>`;
+        content += `<p><strong>Push API:</strong> ${'PushManager' in window ? 'Ja' : 'Nein'}</p>`;
+        content += `<p><strong>Notifications API:</strong> ${'Notification' in window ? 'Ja' : 'Nein'}</p>`;
+        content += `<p><strong>Background Sync:</strong> ${'SyncManager' in window ? 'Ja' : 'Nein'}</p>`;
+        content += `<p><strong>Display Mode (Standalone):</strong> ${window.matchMedia('(display-mode: standalone)').matches ? 'Ja' : 'Nein'}</p>`;
+        this.createInstallModal("Browser Kompatibilität", content, this.options.debugModalId);
+    }
+
+    async clearAppCachesDebug(showModal = false) {
+        if (!('caches' in window)) {
+            alert("Cache API nicht verfügbar."); return;
+        }
+        try {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+            if (this.options.debug) console.log("UniversalPWAInstaller (clearAppCachesDebug): Alle Caches gelöscht.");
+            if (showModal) this.showSuccessMessage("Alle App-Caches wurden erfolgreich gelöscht. Bitte laden Sie die Seite neu.", 5000);
+            else alert("Alle App-Caches gelöscht. Bitte Seite neu laden.");
+            // Optional: Service Worker neu registrieren, falls das gewünscht ist.
+            // if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            //     navigator.serviceWorker.controller.postMessage({ action: 'clearOldCachesAndReRegister' });
+            // }
+        } catch (error) {
+            if (this.options.debug) console.error("UniversalPWAInstaller (clearAppCachesDebug): Fehler beim Löschen der Caches:", error);
+            if (showModal) this.showInstallErrorMessage("Fehler beim Löschen der Caches.");
+            else alert("Fehler beim Löschen der Caches.");
+        }
+    }
+
+} // End of UniversalPWAInstaller Class
+
+// Initialisieren des UniversalPWAInstallers
+// Die Optionen können hier angepasst oder aus einer globalen Konfiguration geladen werden.
+const pwaInstallerOptions = {
+    installButtonId: 'installPwaButton', // ID des Buttons, der den Installations-Prompt auslöst oder den Guide anzeigt
+    appName: 'Angelfreund', // Wird in einigen Guides verwendet
+    debug: true, // Auf true setzen für Konsolen-Logs
+    // Weitere Optionen könnten hier hinzugefügt werden, z.B. spezifische Icon-Pfade für Guides
+    enableIOSInstallPopup: true,
+    enableFirefoxInstallGuide: true,
+    enableSamsungInstallGuide: true,
+    promptDelay: 2000, // Kürzere Verzögerung für Testzwecke
+};
+const pwaInstaller = new UniversalPWAInstaller(pwaInstallerOptions);
+window.pwaInstaller = pwaInstaller; // Optional: global verfügbar machen für Debugging
+
+</script>
+<div id="pwaDebugControls" style="display: none;">
+    <button onclick="window.pwaInstaller.showPWAStatusDebug()">PWA Status</button>
+    <button onclick="window.pwaInstaller.showBrowserCompatibilityDebug()">Browser Komp.</button>
+    <button onclick="window.pwaInstaller.clearAppCachesDebug(true)">Caches löschen</button>
+    <button onclick="window.pwaInstaller.triggerAppropriateInstallGuide()">Install Guide</button>
+    <button onclick="if(window.pwaInstaller.deferredPrompt) { window.pwaInstaller.promptInstall(); } else { alert('Kein Prompt verfügbar.'); }">Zeige Prompt</button>
+    <button onclick="window.pwaInstaller.showCacheStatusModal()">Cache Status</button>
+</div>
+<script>
+    // Debug-Controls nur anzeigen, wenn im Debug-Modus und nicht auf einem Mobilgerät (um UI nicht zu stören)
+    if (window.pwaInstaller && window.pwaInstaller.options.debug && !/Mobi|Android/i.test(navigator.userAgent)) {
+        const debugControls = document.getElementById('pwaDebugControls');
+        if (debugControls) debugControls.style.display = 'flex';
+    }
+</script>
 </body>
 </html>
