@@ -77,19 +77,19 @@
       "name": "Neuen Fang hinzufügen",
       "short_name": "Fang+",
       "description": "Schnell einen neuen Fang dokumentieren",
-      "url": "/PWA/index.html?action=add-catch"
+      "url": "./index.html?action=add-catch"
     },
     {
       "name": "Bisswahrscheinlichkeit heute",
       "short_name": "Prognose",
       "description": "Aktuelle Bisswahrscheinlichkeit und Wetterdaten",
-      "url": "/PWA/index.html?action=today-forecast"
+      "url": "./index.html?action=today-forecast"
     },
     {
       "name": "Meine Statistiken",
       "short_name": "Stats",
       "description": "Fangstatistiken und Analysen anzeigen",
-      "url": "/PWA/index.html?action=statistics"
+      "url": "./index.html?action=statistics"
     }
   ],
   "categories": [
@@ -102,7 +102,7 @@
   "prefer_related_applications": false,
   "related_applications": [],
   "share_target": {
-    "action": "/PWA/index.html?share-target",
+    "action": "./index.html?share-target",
     "method": "GET",
     "params": {
       "title": "title",
@@ -113,7 +113,7 @@
   "protocol_handlers": [
     {
       "protocol": "geo",
-      "url": "/PWA/index.html?coordinates=%s"
+      "url": "./index.html?coordinates=%s"
     }
   ],
   "edge_side_panel": {
