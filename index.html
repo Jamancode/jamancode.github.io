@@ -14,6 +14,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180x180.png">
     <link rel="apple-touch-icon" sizes="167x167" href="images/icon-180x180.png">
     <!-- Fallback for 167x167, using 180x180 as specific 167 is not available -->
+    <link rel="apple-touch-icon" sizes="152x152" href="images/icon-152x152.png">
     <link rel="apple-touch-icon" href="images/icon-192x192.png">
     <!-- Default icon without specific size, often picked up by older iOS or as a general fallback -->
 
@@ -4941,7 +4942,8 @@ function refreshProbabilities(event) { // event hinzugefügt
             isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/Chromium/.test(ua) && !/Edg/.test(ua) && !/OPR\//.test(ua) && !/SamsungBrowser/.test(ua);
         }
 
-        const isChrome = /Chrome/.test(ua) && !/Edg/.test(ua) && !isSafari && !/OPR\//.test(ua) && !/SamsungBrowser/.test(ua);
+        const isChromiumBased = (/Chrome/.test(ua) || /Chromium/.test(ua)) && !/Edg/.test(ua) && !isSafari && !/OPR\//.test(ua) && !/SamsungBrowser/.test(ua);
+        const isChrome = isChromiumBased; // isChrome can now be an alias or used if specific Chrome-only features are ever needed
         const isEdge = /Edg/.test(ua);
         const isFirefox = /Firefox/.test(ua) && !/Seamonkey/.test(ua); // Exclude Seamonkey
         const isSamsungBrowser = /SamsungBrowser/.test(ua);
@@ -4952,7 +4954,8 @@ function refreshProbabilities(event) { // event hinzugefügt
         return {
             isIOS,
             isSafari,
-            isChrome,
+            isChrome, // Retains isChrome, now effectively isChromiumBased
+            isChromiumBased, // Explicitly add isChromiumBased
             isEdge,
             isFirefox,
             isSamsungBrowser,
@@ -4972,22 +4975,26 @@ function refreshProbabilities(event) { // event hinzugefügt
 
         async initialize(router) {
             console.log('PWAStrategy: AutomaticInstallStrategy.initialize called');
+            this.router = router; // Store router instance
+
             window.addEventListener('beforeinstallprompt', (e) => {
                 console.log('PWAStrategy: beforeinstallprompt event captured by AutomaticInstallStrategy.');
                 e.preventDefault();
                 this.deferredPrompt = e;
                 window.deferredPrompt = e; // Keep global for wider compatibility
-                router.updateInstallButtonVisibility(true);
+                this.router.updateInstallButtonVisibility(true);
+                this.router.setupSettingsInstallButton(); // Also update settings button
             });
 
+            // The PWAStrategyRouter's appinstalled listener is now the primary one.
+            // This class-specific one can be simplified or removed if the router handles all cases.
+            // For now, ensure it correctly nullifies its own prompt.
             window.addEventListener('appinstalled', () => {
-                console.log('PWAStrategy: appinstalled event fired.');
-                this.deferredPrompt = null;
-                window.deferredPrompt = null; // Clear global
-                router.updateInstallButtonVisibility(false);
-                if (window.pwaRouterInstance) { // Refresh settings UI if app installed
-                    window.pwaRouterInstance.setupSettingsInstallButton();
-                }
+                 console.log('PWAStrategy: AutomaticInstallStrategy handling appinstalled event.');
+                 if (this.deferredPrompt) {
+                    this.deferredPrompt = null;
+                 }
+                 // Router's listener will handle UI updates.
             });
 
             if (window.deferredPrompt && !this.deferredPrompt) { // Check if prompt was already stashed
@@ -5000,6 +5007,31 @@ function refreshProbabilities(event) { // event hinzugefügt
         showInstallPrompt() {
             console.log('PWAStrategy: AutomaticInstallStrategy - showInstallPrompt called. UI update is handled by router.');
         }
+
+        async install() { // Method to be called by banner install button
+            if (this.deferredPrompt) {
+                this.deferredPrompt.prompt();
+                try {
+                    const { outcome } = await this.deferredPrompt.userChoice;
+                    console.log(`PWAStrategy: User response from AutomaticStrategy.install: ${outcome}`);
+                    this.deferredPrompt = null;
+                    window.deferredPrompt = null; // Ensure global is also cleared
+                    this.router.updateInstallButtonVisibility(false);
+                    this.router.setupSettingsInstallButton(); // Refresh all UI
+                } catch (error) {
+                    console.error('PWAStrategy: Error during AutomaticStrategy.install userChoice:', error);
+                    this.deferredPrompt = null;
+                    window.deferredPrompt = null;
+                    this.router.updateInstallButtonVisibility(false);
+                    this.router.setupSettingsInstallButton();
+                }
+            } else {
+                console.log("PWAStrategy: AutomaticStrategy.install - Deferred prompt not available.");
+                // Fallback or message if prompt is not available
+                this.router.updateInstallButtonVisibility(false);
+                this.router.setupSettingsInstallButton(); // Re-evaluate settings button
+            }
+        }
     }
 
     class IOSManualStrategy {
@@ -5011,7 +5043,7 @@ function refreshProbabilities(event) { // event hinzugefügt
                 <h4><i class="fab fa-apple"></i> App auf iOS installieren:</h4>
                 <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
                     <li style="margin-bottom: 10px;">Stellen Sie sicher, dass Sie diese Seite in <strong>Safari</strong> geöffnet haben. Andere Browser auf iOS unterstützen diese Funktion möglicherweise nicht.</li>
-                    <li style="margin-bottom: 10px;">Tippen Sie auf das <strong>Teilen-Symbol</strong> (ein Quadrat mit einem Pfeil nach oben: <i class="fas fa-share-square" style="display: inline-block; width: 20px; text-align: center;"></i> ) in der Menüleiste von Safari (meistens unten).</li>
+                    <li style="margin-bottom: 10px;">Tippen Sie auf das <strong>Teilen-Symbol</strong> (ein Quadrat mit einem Pfeil nach oben: <i class="fas fa-share-square" style="font-size: 1.2em; display: inline-block; width: 22px; text-align: center; vertical-align: middle;"></i> ) in der Menüleiste von Safari (je nach Gerät und iOS-Version meist unten oder oben).</li>
                     <li style="margin-bottom: 10px;">Scrollen Sie in der Liste der Optionen nach unten und suchen Sie nach "<strong>Zum Home-Bildschirm</strong>". Tippen Sie darauf.</li>
                     <li style="margin-bottom: 10px;">Bestätigen Sie den Namen der App (kann angepasst werden) und tippen Sie dann oben rechts auf "<strong>Hinzufügen</strong>".</li>
                 </ol>
@@ -5101,6 +5133,35 @@ function refreshProbabilities(event) { // event hinzugefügt
                         <li style="margin-bottom: 10px;">Suchen Sie nach einer Option wie "<strong>Startbildschirm</strong>" oder "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
                     </ol>
                 `;
+            } else if (this.browserInfo.isChromiumBased) {
+                if (this.browserInfo.isDesktop) {
+                    specificInstructions = `
+                        <h4><i class="fab fa-chrome"></i> App auf Chromium-basiertem Desktop-Browser installieren:</h4>
+                        <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
+                            <li style="margin-bottom: 10px;">Öffnen Sie das Browser-Menü (meist drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i> oder ein ähnliches Symbol oben rechts).</li>
+                            <li style="margin-bottom: 10px;">Suchen Sie nach einer Option wie "<strong>Dein Angelfreund installieren...</strong>" oder "<strong>App installieren...</strong>". Diese Option ist oft direkt im Hauptmenü sichtbar.</li>
+                            <li style="margin-bottom: 10px;">Alternativ suchen Sie nach "<strong>Weitere Tools</strong>" und wählen dann "<strong>Verknüpfung erstellen...</strong>".</li>
+                            <li style="margin-bottom: 10px;">Wenn Sie "Verknüpfung erstellen..." wählen, stellen Sie sicher, dass die Option "<strong>In Fenster öffnen</strong>" aktiviert ist, um das beste App-Erlebnis zu erzielen.</li>
+                            <li style="margin-bottom: 10px;">Klicken Sie auf "<strong>Installieren</strong>" oder "<strong>Erstellen</strong>".</li>
+                        </ol>
+                        <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App sollte nun über eine Verknüpfung auf Ihrem Desktop oder in Ihrem Anwendungsmenü verfügbar sein. Der genaue Wortlaut kann je nach spezifischem Chromium-Browser (z.B. Brave, Vivaldi, Opera) leicht variieren.</p>
+                    `;
+                } else if (this.browserInfo.isAndroid) {
+                    specificInstructions = `
+                        <h4><i class="fab fa-android"></i> App auf Chromium-basiertem Android-Browser installieren:</h4>
+                        <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
+                            <li style="margin-bottom: 10px;">Tippen Sie auf das Browser-Menü (meist drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i>).</li>
+                            <li style="margin-bottom: 10px;">Suchen Sie nach der Option "<strong>App installieren</strong>" oder "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
+                            <li style="margin-bottom: 10px;">Folgen Sie den Anweisungen auf dem Bildschirm, um die App hinzuzufügen.</li>
+                        </ol>
+                        <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App erscheint dann als Icon auf Ihrem Startbildschirm.</p>
+                    `;
+                } else { // Fallback for other Chromium OS
+                     specificInstructions = `
+                        <h4><i class="fab fa-chrome"></i> App auf Chromium-basiertem Browser installieren:</h4>
+                        <p style="text-align: left;">Versuchen Sie, diese Seite über das Browsermenü (oft drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i>) zu Ihrem Startbildschirm hinzuzufügen oder als App zu installieren. Die genauen Schritte können je nach Browserversion und Betriebssystem variieren.</p>
+                     `;
+                }
             } else {
                 specificInstructions = '<p style="text-align: left;">Für Ihren Browser: Versuchen Sie, diese Seite über das Browsermenü (oft drei Punkte oder Linien) zu Ihrem Startbildschirm hinzuzufügen oder als Lesezeichen zu speichern für schnellen Zugriff.</p>';
             }
@@ -5123,7 +5184,8 @@ function refreshProbabilities(event) { // event hinzugefügt
         }
 
         selectStrategy() {
-            if (this.browserInfo.supportsBeforeInstallPrompt && (this.browserInfo.isChrome || this.browserInfo.isEdge || (this.browserInfo.isFirefox && this.browserInfo.isAndroid) || this.browserInfo.isSamsungBrowser || this.browserInfo.isOpera)) {
+            // Use isChromiumBased here for broader compatibility including DuckDuckGo and other Chromium variants
+            if (this.browserInfo.supportsBeforeInstallPrompt && (this.browserInfo.isChromiumBased || this.browserInfo.isEdge || (this.browserInfo.isFirefox && this.browserInfo.isAndroid) || this.browserInfo.isSamsungBrowser || this.browserInfo.isOpera)) {
                 this.strategy = new AutomaticInstallStrategy();
             } else if (this.browserInfo.isSafari && this.browserInfo.isIOS) {
                 this.strategy = new IOSManualStrategy();
@@ -5156,28 +5218,26 @@ function refreshProbabilities(event) { // event hinzugefügt
             if (bannerInstallBtn) {
                 bannerInstallBtn.addEventListener('click', async () => {
                     console.log('Custom Install Banner install button clicked.');
-                    const promptToUse = (this.strategy instanceof AutomaticInstallStrategy && this.strategy.deferredPrompt) ? this.strategy.deferredPrompt : window.deferredPrompt;
-                    if (promptToUse) {
-                        promptToUse.prompt();
+                    // Ensure we use the strategy's install method if it's AutomaticInstallStrategy
+                    if (this.strategy instanceof AutomaticInstallStrategy && this.strategy.deferredPrompt) {
+                        await this.strategy.install(); // This will handle prompt, nullification, and UI updates via router
+                    } else if (window.deferredPrompt) { // Fallback if strategy doesn't have it or is not Automatic
+                        window.deferredPrompt.prompt();
                         try {
-                            const choiceResult = await promptToUse.userChoice;
-                            if (choiceResult.outcome === 'accepted') {
-                                console.log('User accepted the A2HS prompt from custom banner.');
-                                this.customInstallBannerEl.style.display = 'none'; // Hide banner
-                                this.updateInstallButtonVisibility(false); // Hide header button too
-                                this.setupSettingsInstallButton(); // Refresh settings section
-                            } else {
-                                console.log('User dismissed the A2HS prompt from custom banner.');
-                                this.customInstallBannerEl.style.display = 'none'; // Hide banner on dismiss
-                            }
+                            const { outcome } = await window.deferredPrompt.userChoice;
+                            console.log(`User response from custom banner (fallback): ${outcome}`);
+                            this.customInstallBannerEl.style.display = 'none';
+                            this.updateInstallButtonVisibility(false);
+                            this.setupSettingsInstallButton();
                         } catch (error) {
-                            console.error('Error with userChoice from custom banner:', error);
+                            console.error('Error with userChoice from custom banner (fallback):', error);
                             this.customInstallBannerEl.style.display = 'none';
                         }
-                        if (this.strategy instanceof AutomaticInstallStrategy) this.strategy.deferredPrompt = null;
                         window.deferredPrompt = null; // Consume prompt
+                        if (this.strategy instanceof AutomaticInstallStrategy) this.strategy.deferredPrompt = null;
                     } else {
-                        this.customInstallBannerEl.style.display = 'none'; // Should not happen if button is visible
+                        console.log("Custom banner: No prompt found in strategy or window.");
+                        this.customInstallBannerEl.style.display = 'none';
                     }
                 });
             }
@@ -5283,34 +5343,53 @@ function refreshProbabilities(event) { // event hinzugefügt
                         promptToUse.userChoice.then(choiceResult => {
                             if (choiceResult.outcome === 'accepted') {
                                 console.log('User accepted the A2HS prompt from settings button');
-                                instructionsDiv.innerHTML = '<p><i class="fas fa-check-circle"></i> App wird installiert. Sie finden sie auf Ihrem Startbildschirm.</p>';
-                                instructionsDiv.style.display = 'block';
-                                settingsInstallBtn.style.display = 'none';
-                                this.updateInstallButtonVisibility(false);
+                                // 'appinstalled' event handles UI changes.
                             } else {
                                 console.log('User dismissed the A2HS prompt from settings button');
-                                if (this.strategy && typeof this.strategy.getInstallInstructionsHTML === 'function') {
-                                   instructionsDiv.innerHTML = this.strategy.getInstallInstructionsHTML();
-                                   instructionsDiv.style.display = 'block';
-                                }
+                                // Instructions might be shown below if strategy changes or prompt is null now.
                             }
                             if (this.strategy instanceof AutomaticInstallStrategy) this.strategy.deferredPrompt = null;
                             window.deferredPrompt = null;
-                        }).catch(err => console.error("Error on userChoice from settings:", err));
-                    } else if (this.strategy && typeof this.strategy.getInstallInstructionsHTML === 'function') {
-                        const currentInstructionsHTML = this.strategy.getInstallInstructionsHTML();
-                        instructionsDiv.innerHTML = currentInstructionsHTML;
-                        if (instructionsDiv.style.display === 'block' && instructionsDiv.innerHTML === currentInstructionsHTML && !(this.strategy instanceof FirefoxDesktopStrategy) ) {
-                             instructionsDiv.style.display = 'none';
+                            this.updateInstallButtonVisibility(false); // Update header/banner
+                            this.setupSettingsInstallButton();         // Re-evaluate this settings section
+                        }).catch(err => {
+                            console.error("Error on userChoice from settings:", err);
+                            if (this.strategy instanceof AutomaticInstallStrategy) this.strategy.deferredPrompt = null;
+                            window.deferredPrompt = null;
+                            this.updateInstallButtonVisibility(false);
+                            this.setupSettingsInstallButton();
+                        });
+                    } else {
+                        // No active prompt. Show manual instructions.
+                        let instructionsHTML = '';
+                        // If original strategy was Automatic (e.g. Chrome/Edge) but prompt is now gone,
+                        // provide manual instructions for that browser type (Chromium).
+                        if (this.strategy instanceof AutomaticInstallStrategy && (this.browserInfo.isChromiumBased || this.browserInfo.isEdge)) {
+                            console.log("PWAStrategy: Settings - Automatic strategy was active, prompt gone. Showing Chromium fallback instructions.");
+                            const tempFallbackStrategy = new FallbackStrategy(this.browserInfo);
+                            instructionsHTML = tempFallbackStrategy.getInstallInstructionsHTML();
+                        } else if (this.strategy && typeof this.strategy.getInstallInstructionsHTML === 'function') {
+                            // Standard path for strategies that have their own instructions (iOS, Firefox Desktop, general Fallback)
+                             console.log("PWAStrategy: Settings - Using getInstallInstructionsHTML from current strategy:", this.strategy.constructor.name);
+                            instructionsHTML = this.strategy.getInstallInstructionsHTML();
                         } else {
+                            console.log("PWAStrategy: Settings - No specific instructions available.");
+                            instructionsHTML = "<p>Keine spezifischen Installationsanweisungen für diesen Browser verfügbar oder die App ist bereits installiert/nicht installierbar.</p>";
+                        }
+
+                        const currentInstructionsInDiv = instructionsDiv.innerHTML;
+                        const isCurrentlyVisible = instructionsDiv.style.display === 'block';
+
+                        if (isCurrentlyVisible && currentInstructionsInDiv === instructionsHTML && !(this.strategy instanceof FirefoxDesktopStrategy)) {
+                             instructionsDiv.style.display = 'none'; // Toggle off if same content clicked again (unless Firefox with dynamic links)
+                        } else {
+                             instructionsDiv.innerHTML = instructionsHTML;
                              instructionsDiv.style.display = 'block';
                         }
-                        if (this.strategy instanceof FirefoxDesktopStrategy && instructionsDiv.style.display === 'block') {
-                             instructionsDiv.innerHTML = this.strategy.getInstallInstructionsHTML(); // Regenerate for fresh blob URLs
+                        // For Firefox, always regenerate if displayed, because blob URLs might expire.
+                        if (this.strategy instanceof FirefoxDesktopStrategy && instructionsDiv.style.display === 'block' && currentInstructionsInDiv !== instructionsHTML) {
+                             instructionsDiv.innerHTML = this.strategy.getInstallInstructionsHTML();
                         }
-                    } else {
-                         instructionsDiv.innerHTML = "<p>Keine spezifischen Installationsanweisungen für diesen Browser verfügbar oder die App ist bereits installiert/nicht installierbar.</p>";
-                         instructionsDiv.style.display = 'block';
                     }
                 };
             }
@@ -5345,12 +5424,13 @@ function refreshProbabilities(event) { // event hinzugefügt
                const promptToUse = (strategy instanceof AutomaticInstallStrategy && strategy.deferredPrompt) ? strategy.deferredPrompt : window.deferredPrompt;
 
                if (promptToUse) {
-                 installPwaButton.style.display = 'none';
+                     // installPwaButton.style.display = 'none'; // Visibility will be handled by router after prompt
                  promptToUse.prompt();
                  try {
                    const choiceResult = await promptToUse.userChoice;
                    if (choiceResult.outcome === 'accepted') {
                      console.log('User accepted the A2HS prompt from header button.');
+                         // 'appinstalled' event will handle UI updates.
                    } else {
                      console.log('User dismissed the A2HS prompt from header button.');
                    }
@@ -5359,7 +5439,10 @@ function refreshProbabilities(event) { // event hinzugefügt
                  }
                  if (strategy instanceof AutomaticInstallStrategy) strategy.deferredPrompt = null;
                  window.deferredPrompt = null;
-                 if(router) router.updateInstallButtonVisibility(false);
+                     if(router) {
+                        router.updateInstallButtonVisibility(false);
+                        router.setupSettingsInstallButton(); // Refresh settings after prompt.
+                     }
                } else {
                  console.log('Header install button clicked, but no deferredPrompt available.');
                  if (router) {
@@ -5375,14 +5458,26 @@ function refreshProbabilities(event) { // event hinzugefügt
            }
 
    window.addEventListener('appinstalled', () => {
-     // Hide the install button if the app is installed
-     if (installPwaButton) {
-       installPwaButton.style.display = 'none';
+     // This is the global listener, ensure it robustly updates UI via router instance.
+     console.log('Global appinstalled event fired.');
+
+     // Clear all known deferredPrompt references
+     window.deferredPrompt = null;
+     if (window.pwaRouterInstance && window.pwaRouterInstance.strategy instanceof AutomaticInstallStrategy) {
+        window.pwaRouterInstance.strategy.deferredPrompt = null;
      }
-     // Clear the deferredPrompt so it can be garbage collected
-     deferredPrompt = null;
-     // Optionally, send analytics event to indicate successful install
-     console.log('PWA was installed');
+
+     if (window.pwaRouterInstance) {
+        // Update browserInfo state
+        window.pwaRouterInstance.browserInfo.isInStandaloneMode = true;
+        // Update UI
+        window.pwaRouterInstance.updateInstallButtonVisibility(false); // Hide all prompts
+        window.pwaRouterInstance.setupSettingsInstallButton();      // Refresh settings UI to "installed"
+     } else if (installPwaButton) { // Fallback if router instance not found
+        installPwaButton.style.display = 'none';
+     }
+     // Optionally, send analytics event
+     // Example: gtag('event', 'pwa_installed', { 'event_category': 'PWA', 'event_label': 'App Installed' });
    });
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
