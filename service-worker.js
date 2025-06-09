@@ -2,7 +2,96 @@ const CACHE_NAME = 'fangkalender-pwa-cache-v1';
 const STATIC_CACHE = 'fangkalender-static-v1';
 const API_CACHE = 'fangkalender-api-v1';
 
-// Kernressourcen die IMMER verfügbar sein müssen
+const SAFARI_CACHE_LIMIT_BYTES = 40 * 1024 * 1024; // 40MB to be a bit safe under 50MB
+const STATIC_CACHE_EVICTION_COUNT = 5; // Number of static items to evict if limit reached
+const API_CACHE_EVICTION_COUNT = 10; // Number of API items to evict if limit reached
+
+function isSafari() {
+  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+}
+
+async function getCacheUsage() {
+  if (navigator.storage && navigator.storage.estimate) {
+    const estimate = await navigator.storage.estimate();
+    return estimate.usage || 0;
+  }
+  return 0; // Fallback if API not available
+}
+
+async function evictOldCacheItems(cacheNameToClean, evictionCount) {
+  console.log(`ServiceWorker: Attempting to evict ${evictionCount} items from cache: ${cacheNameToClean}`);
+  try {
+    const cache = await caches.open(cacheNameToClean);
+    const requests = await cache.keys();
+    if (requests.length === 0) {
+        console.log(`ServiceWorker: Cache ${cacheNameToClean} is empty, nothing to evict.`);
+        return;
+    }
+
+    // For API_CACHE, try to evict based on stored timestamp if possible
+    if (cacheNameToClean === API_CACHE && requests.length > evictionCount) {
+        let itemsWithTimestamp = [];
+        for (const request of requests) {
+            const response = await cache.match(request);
+            if (response) {
+                try {
+                    const data = await response.json(); // Assumes API responses are stored as JSON strings with a timestamp
+                    itemsWithTimestamp.push({ request, timestamp: data.timestamp || 0 });
+                } catch (e) {
+                    // Not a JSON response or no timestamp, assign a default old timestamp
+                    itemsWithTimestamp.push({ request, timestamp: 0 });
+                }
+            }
+        }
+        itemsWithTimestamp.sort((a, b) => a.timestamp - b.timestamp); // Sort oldest first
+        const itemsToEvict = itemsWithTimestamp.slice(0, evictionCount);
+        for (const item of itemsToEvict) {
+            console.log(`ServiceWorker: Evicting (oldest API) ${item.request.url} from ${cacheNameToClean}`);
+            await cache.delete(item.request);
+        }
+    } else if (requests.length > evictionCount) { // For STATIC_CACHE or if API_CACHE items aren't structured with timestamp
+        const itemsToEvict = requests.slice(0, evictionCount); // Simple FIFO by array order (keys() doesn't guarantee order)
+        for (const request of requests) {
+            console.log(`ServiceWorker: Evicting (FIFO) ${request.url} from ${cacheNameToClean}`);
+            await cache.delete(request);
+        }
+    } else {
+         console.log(`ServiceWorker: Not enough items in ${cacheNameToClean} to evict ${evictionCount}. Evicting all ${requests.length} items.`);
+         for (const request of requests) {
+            console.log(`ServiceWorker: Evicting (all) ${request.url} from ${cacheNameToClean}`);
+            await cache.delete(request);
+        }
+    }
+  } catch (err) {
+    console.error(`ServiceWorker: Error during cache eviction from ${cacheNameToClean}:`, err);
+  }
+}
+
+async function ensureCacheLimits() {
+  if (!isSafari()) {
+    return;
+  }
+  try {
+    const usage = await getCacheUsage();
+    console.log(`ServiceWorker: Current estimated cache usage: ${(usage / (1024*1024)).toFixed(2)}MB`);
+    if (usage > SAFARI_CACHE_LIMIT_BYTES) {
+      console.warn(`ServiceWorker: Cache usage ${usage} exceeds Safari limit ${SAFARI_CACHE_LIMIT_BYTES}. Evicting items.`);
+      // Evict from API cache first as it's generally more dynamic and might grow faster
+      await evictOldCacheItems(API_CACHE, API_CACHE_EVICTION_COUNT);
+      // Then, if still over (less likely with API eviction, but as a fallback)
+      const newUsage = await getCacheUsage();
+      if (newUsage > SAFARI_CACHE_LIMIT_BYTES) {
+         await evictOldCacheItems(STATIC_CACHE, STATIC_CACHE_EVICTION_COUNT);
+      }
+    }
+  } catch (err) {
+    console.error('ServiceWorker: Error in ensureCacheLimits:', err);
+  }
+}
+
+// Kernressourcen die IMMER verfügbar sein müssen.
+// Hinweis: Externe CDN-Ressourcen (FontAwesome, Leaflet, jsPDF) werden nicht direkt hier gecacht.
+// Ihre Offline-Verfügbarkeit hängt vom Browser-Caching oder dynamischem Caching ab.
 const CRITICAL_RESOURCES = [
   'index.html',
   'manifest.json'
@@ -101,6 +190,7 @@ async function handleStaticResource(request) {
     const networkResponse = await fetch(request);
 
     if (networkResponse && networkResponse.status === 200) {
+      await ensureCacheLimits(); // Check and manage cache size before adding new static resource
       const cache = await caches.open(STATIC_CACHE);
       cache.put(request, networkResponse.clone());
     }
@@ -130,6 +220,7 @@ async function handleAPIRequest(request) {
     if (networkResponse && networkResponse.status === 200) {
       // Cache nur GET-Requests
       if (request.method === 'GET') {
+        await ensureCacheLimits(); // Check and manage cache size before adding new API resource
         // API-Responses mit Zeitstempel versehen für Verfallslogik
         const responseClone = networkResponse.clone();
         const responseBody = await responseClone.json();

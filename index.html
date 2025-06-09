@@ -11,6 +11,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Angelfreund">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="images/icon-180x180.png">
+    <!-- Fallback for 167x167, using 180x180 as specific 167 is not available -->
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    <!-- Default icon without specific size, often picked up by older iOS or as a general fallback -->
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1736,9 +1741,104 @@
                 grid-template-columns: 1fr;
             }
         }
+
+    /* Custom Install Banner Styles */
+    @keyframes slideUpBanner {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    #customInstallBanner {
+        /* Base styles are inline for initial setup, can be moved to CSS if preferred */
+        /* Ensure button within banner uses variables if possible */
+    }
+    #customInstallBanner .btn-success { /* Make sure it picks up global btn styles */
+        /* background: var(--success-gradient); no need to redefine if global .btn.btn-success exists */
+    }
+    #customInstallBannerDismiss:hover {
+        background: rgba(255,255,255,0.2) !important;
+    }
+
+    /* PWA Install Section in Settings */
+    #pwaInstallSection {
+        padding: 1.5rem;
+        background-color: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        margin-top: 1rem; /* Ensure spacing if hr is removed */
+        box-shadow: var(--shadow-md);
+    }
+    #pwaInstallSection .form-label { /* Already styled globally */
+        /* font-size: 1.1em; */
+        /* margin-bottom: 0.75rem; */
+    }
+    #settingsInstallPwaButton { /* Already uses .btn .btn-large */
+        /* display: flex; */
+        /* align-items: center; */
+        /* justify-content: center; */
+        /* gap: 0.75rem; */
+        /* width: 100%; */
+        /* margin-bottom: 1rem; */
+    }
+    #pwaInstallInstructions {
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+        background: var(--bg-primary); /* Contrasting background for instructions box */
+        border: 1px solid var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-inner, var(--shadow-sm)); /* Use a custom inner shadow or existing small shadow */
+        text-align: left; /* Ensure lists and text are left-aligned */
+    }
+    #pwaInstallInstructions h4 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        font-size: 1.2em;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    #pwaInstallInstructions ol {
+        padding-left: 25px; /* Indent list */
+        margin-bottom: 1rem;
+    }
+    #pwaInstallInstructions ol li {
+        margin-bottom: 0.75rem; /* Space out list items */
+        line-height: 1.5;
+    }
+    #pwaInstallInstructions p {
+        font-size: 0.95em;
+        line-height: 1.6;
+        margin-bottom: 0.75rem;
+    }
+    #pwaInstallInstructions .btn-sm { /* Ensure buttons within instructions are styled correctly */
+        margin-top: 0.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Ensure FontAwesome icons in instructions are styled if needed */
+    #pwaInstallInstructions i.fab,
+    #pwaInstallInstructions i.fas {
+        margin-right: 0.3em;
+        width: 20px; /* Give some space for icons in instructions */
+        text-align: center;
+    }
+    #pwaInstallInstructions ol li i.fas.fa-share-square { /* Specific styling for share icon example */
+        display: inline-block;
+        width: auto; /* Reset width if needed for specific icons */
+        margin-right: 0.1em;
+    }
     </style>
 </head>
 <body>
+    <div id="customInstallBanner" style="display: none; background: var(--primary-gradient); color: white; padding: 15px; text-align: center; position: fixed; bottom: 0; width: 100%; z-index: 1050; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); animation: slideUpBanner 0.5s ease-out forwards;">
+        <div style="max-width: 800px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+            <span style="text-align: left;">Installieren Sie 'Dein Angelfreund' für Offline-Zugriff und ein besseres Erlebnis!</span>
+            <div>
+                <button id="customInstallBannerButton" class="btn btn-success" style="margin-right: 10px;"><i class="fas fa-download"></i> Jetzt installieren</button>
+                <button id="customInstallBannerDismiss" class="btn btn-icon" style="background: transparent; border: 1px solid white; color:white;" aria-label="Banner schließen">&times;</button>
+            </div>
+        </div>
+    </div>
     <!-- Water Animation Background -->
     <div class="water-bg"></div>
 
@@ -2712,6 +2812,16 @@ function initializeApp() {
     updateConnectionStatus(); // Initial check
     window.addEventListener('online', updateConnectionStatus);
     window.addEventListener('offline', updateConnectionStatus);
+
+    // Initialize and execute PWA Strategy Router
+    if (!window.pwaRouterInstance) {
+        console.log('PWAStrategy: Initializing PWAStrategyRouter...');
+        window.pwaRouterInstance = new PWAStrategyRouter();
+        window.pwaRouterInstance.execute();
+    } else {
+        console.log('PWAStrategy: PWAStrategyRouter already initialized. Refreshing settings UI.');
+        window.pwaRouterInstance.setupSettingsInstallButton();
+    }
 }
 function colorToRgb(colorString) {
     if (!colorString) return '255,255,255'; // Fallback
@@ -4814,50 +4924,455 @@ function refreshProbabilities(event) { // event hinzugefügt
     }
 }
 
+    // --- PWA Installation Strategy Logic ---
+
+    function detectBrowserPWASupport() {
+        const ua = navigator.userAgent;
+        const vendor = navigator.vendor || "";
+
+        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+
+        let isSafari = false;
+        if (isIOS) {
+            // Safari on iOS: WebKit based, not Chrome (CriOS), Firefox (FxiOS), or Edge (EdgiOS)
+            isSafari = /AppleWebKit/.test(ua) && !/CriOS/.test(ua) && !/FxiOS/.test(ua) && !/EdgiOS/.test(ua);
+        } else {
+            // Desktop Safari: Contains "Safari" but not other browser identifiers like Chrome, Edge, Opera, Samsung
+            isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/Chromium/.test(ua) && !/Edg/.test(ua) && !/OPR\//.test(ua) && !/SamsungBrowser/.test(ua);
+        }
+
+        const isChrome = /Chrome/.test(ua) && !/Edg/.test(ua) && !isSafari && !/OPR\//.test(ua) && !/SamsungBrowser/.test(ua);
+        const isEdge = /Edg/.test(ua);
+        const isFirefox = /Firefox/.test(ua) && !/Seamonkey/.test(ua); // Exclude Seamonkey
+        const isSamsungBrowser = /SamsungBrowser/.test(ua);
+        const isOpera = (/OPR\//.test(ua) || /Opera/.test(ua)) && !isEdge; // Opera, but not Edge's UA containing Opera
+
+        const isAndroid = /Android/.test(ua);
+
+        return {
+            isIOS,
+            isSafari,
+            isChrome,
+            isEdge,
+            isFirefox,
+            isSamsungBrowser,
+            isOpera,
+            isAndroid,
+            isDesktop: !isAndroid && !isIOS,
+            supportsBeforeInstallPrompt: 'BeforeInstallPromptEvent' in window,
+            isInStandaloneMode: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
+        };
+    }
+
+    class AutomaticInstallStrategy {
+        constructor() {
+            this.deferredPrompt = null;
+            console.log("PWAStrategy: AutomaticInstallStrategy initialized");
+        }
+
+        async initialize(router) {
+            console.log('PWAStrategy: AutomaticInstallStrategy.initialize called');
+            window.addEventListener('beforeinstallprompt', (e) => {
+                console.log('PWAStrategy: beforeinstallprompt event captured by AutomaticInstallStrategy.');
+                e.preventDefault();
+                this.deferredPrompt = e;
+                window.deferredPrompt = e; // Keep global for wider compatibility
+                router.updateInstallButtonVisibility(true);
+            });
+
+            window.addEventListener('appinstalled', () => {
+                console.log('PWAStrategy: appinstalled event fired.');
+                this.deferredPrompt = null;
+                window.deferredPrompt = null; // Clear global
+                router.updateInstallButtonVisibility(false);
+                if (window.pwaRouterInstance) { // Refresh settings UI if app installed
+                    window.pwaRouterInstance.setupSettingsInstallButton();
+                }
+            });
+
+            if (window.deferredPrompt && !this.deferredPrompt) { // Check if prompt was already stashed
+                console.log('PWAStrategy: Found globally stashed deferredPrompt on initialize.');
+                this.deferredPrompt = window.deferredPrompt;
+                router.updateInstallButtonVisibility(true);
+            }
+        }
+
+        showInstallPrompt() {
+            console.log('PWAStrategy: AutomaticInstallStrategy - showInstallPrompt called. UI update is handled by router.');
+        }
+    }
+
+    class IOSManualStrategy {
+        constructor() { console.log("PWAStrategy: IOSManualStrategy initialized"); }
+        initialize(router) { console.log('PWAStrategy: iOSManualStrategy initialized.'); }
+        showInstallPrompt() { console.log('PWAStrategy: iOS - Guiding user to settings for install instructions.'); }
+        getInstallInstructionsHTML() {
+            return `
+                <h4><i class="fab fa-apple"></i> App auf iOS installieren:</h4>
+                <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
+                    <li style="margin-bottom: 10px;">Stellen Sie sicher, dass Sie diese Seite in <strong>Safari</strong> geöffnet haben. Andere Browser auf iOS unterstützen diese Funktion möglicherweise nicht.</li>
+                    <li style="margin-bottom: 10px;">Tippen Sie auf das <strong>Teilen-Symbol</strong> (ein Quadrat mit einem Pfeil nach oben: <i class="fas fa-share-square" style="display: inline-block; width: 20px; text-align: center;"></i> ) in der Menüleiste von Safari (meistens unten).</li>
+                    <li style="margin-bottom: 10px;">Scrollen Sie in der Liste der Optionen nach unten und suchen Sie nach "<strong>Zum Home-Bildschirm</strong>". Tippen Sie darauf.</li>
+                    <li style="margin-bottom: 10px;">Bestätigen Sie den Namen der App (kann angepasst werden) und tippen Sie dann oben rechts auf "<strong>Hinzufügen</strong>".</li>
+                </ol>
+                <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App erscheint nun als Icon auf Ihrem Home-Bildschirm und kann wie eine normale App gestartet werden, inklusive Offline-Funktionen.</p>
+            `;
+        }
+    }
+
+    class FirefoxDesktopStrategy {
+        constructor() { console.log("PWAStrategy: FirefoxDesktopStrategy initialized"); }
+        initialize(router) { console.log('PWAStrategy: FirefoxDesktopStrategy initialized.'); }
+        showInstallPrompt() { console.log('PWAStrategy: Firefox Desktop - Guiding user to settings for install instructions.'); }
+        getInstallInstructionsHTML() {
+            const pwasForFirefoxLink = "https://addons.mozilla.org/firefox/addon/pwas-for-firefox/";
+            // Using string concatenation for content to avoid issues with backticks in subtask runner
+            const desktopEntryContent = '[Desktop Entry]\n' +
+                'Version=1.0\n' +
+                'Type=Application\n' +
+                'Name=Dein Angelfreund\n' +
+                'Comment=Dein digitaler Angelassistent\n' +
+                'Exec=firefox --new-window --url="' + window.location.href + '"\n' +
+                'Icon=' + window.location.origin + '/images/icon-512x512.png\n' +
+                'Terminal=false\n' +
+                'Categories=Utility;Sports;\n' +
+                'StartupWMClass=Firefox';
+            const desktopBlob = new Blob([desktopEntryContent], { type: 'application/x-desktop' });
+            const desktopUrl = URL.createObjectURL(desktopBlob);
+
+            const batchContent = '@echo off\n' +
+                'start firefox --new-window --url="' + window.location.href + '"';
+            const batBlob = new Blob([batchContent], { type: 'text/plain' });
+            const batUrl = URL.createObjectURL(batBlob);
+
+            return `
+                <h4><i class="fab fa-firefox-browser"></i> App für Firefox Desktop einrichten:</h4>
+                <p style="text-align: left;">Firefox Desktop erfordert für eine PWA-ähnliche Erfahrung meist eine Browser-Erweiterung oder manuelle Verknüpfungen.</p>
+                <strong style="display: block; margin-top: 10px; text-align: left;">Option 1: Mit Browser-Erweiterung (Empfohlen für App-Feeling)</strong>
+                <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
+                    <li style="margin-bottom: 5px;">Installieren Sie die Erweiterung "PWAsForFirefox":
+                        <a href="${pwasForFirefoxLink}" target="_blank" class="btn btn-sm" style="margin-left: 5px;"><i class="fas fa-external-link-alt"></i> Erweiterung im Store öffnen</a>
+                    </li>
+                    <li style="margin-bottom: 5px;">Nach der Installation der Erweiterung, starten Sie Firefox neu.</li>
+                    <li style="margin-bottom: 5px;">Besuchen Sie diese Seite erneut. Ein Installationssymbol oder eine Option im Firefox-Menü (oft unter "Mehr Werkzeuge" o.ä.) sollte nun verfügbar sein.</li>
+                </ol>
+                <strong style="display: block; margin-top: 15px; text-align: left;">Option 2: Manuelle Verknüpfung erstellen (öffnet im Browser)</strong>
+                <p style="text-align: left; font-size: 0.9em;">Diese Methode erstellt eine Desktop-Verknüpfung, die die Web-App in einem neuen Firefox-Fenster öffnet.</p>
+                <div style="text-align: left; margin-top: 5px;">
+                    <a href="${desktopUrl}" download="DeinAngelfreund.desktop" class="btn btn-sm"><i class="fab fa-linux"></i> Für Linux (.desktop)</a>
+                    <a href="${batUrl}" download="DeinAngelfreund.bat" class="btn btn-sm" style="margin-left: 10px;"><i class="fab fa-windows"></i> Für Windows (.bat)</a>
+                </div>
+                <p style="text-align: left; font-size: 0.8em; color: var(--text-secondary); margin-top:10px;">Laden Sie die passende Datei herunter und legen Sie sie an einem gewünschten Ort (z.B. Desktop) ab. Sie können das Icon der Verknüpfung ggf. manuell anpassen.</p>
+            `;
+        }
+    }
+
+    class FallbackStrategy {
+        constructor(browserInfo) { this.browserInfo = browserInfo; console.log("PWAStrategy: FallbackStrategy initialized for:", browserInfo); }
+        initialize(router) { console.log('PWAStrategy: FallbackStrategy initialized.'); }
+        showInstallPrompt() { console.log('PWAStrategy: Fallback - Guiding user to settings for manual install instructions.'); }
+        getInstallInstructionsHTML() {
+            let specificInstructions = '';
+            if (this.browserInfo.isFirefox && this.browserInfo.isAndroid) {
+                specificInstructions = `
+                    <h4><i class="fab fa-firefox"></i> App auf Firefox (Android) installieren:</h4>
+                    <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
+                        <li style="margin-bottom: 10px;">Tippen Sie auf das <strong>Menü-Symbol</strong> (oft drei Punkte oder Linien) in Firefox.</li>
+                        <li style="margin-bottom: 10px;">Suchen Sie nach der Option "<strong>Installieren</strong>" oder "<strong>Seite</strong>" und dann "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
+                        <li style="margin-bottom: 10px;">Bestätigen Sie das Hinzufügen.</li>
+                    </ol>
+                `;
+            } else if (this.browserInfo.isSamsungBrowser) {
+                specificInstructions = `
+                    <h4><i class="fab fa-internet-explorer"></i> App mit Samsung Internet installieren:</h4>
+                     <p style="text-align: left;">Samsung Internet sollte einen Installations-Button anzeigen, wenn die App installierbar ist (prüfen Sie den Header-Bereich dieser App). Falls nicht:</p>
+                    <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
+                        <li style="margin-bottom: 10px;">Tippen Sie auf das <strong>Menü-Symbol</strong> (oft drei Linien unten rechts oder oben rechts).</li>
+                        <li style="margin-bottom: 10px;">Wählen Sie "<strong>Aktuelle Seite hinzufügen zu</strong>" oder eine ähnliche Option.</li>
+                        <li style="margin-bottom: 10px;">Wählen Sie "<strong>Startbildschirm</strong>".</li>
+                    </ol>
+                    <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Auf Samsung Geräten wird oft eine vollwertige App (WebAPK) erstellt, auf anderen Android-Geräten eine Verknüpfung.</p>
+                `;
+            } else if (this.browserInfo.isOpera) {
+                 specificInstructions = `
+                    <h4><i class="fab fa-opera"></i> App mit Opera installieren:</h4>
+                    <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
+                        <li style="margin-bottom: 10px;">Tippen Sie auf das <strong>Menü-Symbol</strong> (oft das Opera-Logo oder drei Punkte).</li>
+                        <li style="margin-bottom: 10px;">Suchen Sie nach einer Option wie "<strong>Startbildschirm</strong>" oder "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
+                    </ol>
+                `;
+            } else {
+                specificInstructions = '<p style="text-align: left;">Für Ihren Browser: Versuchen Sie, diese Seite über das Browsermenü (oft drei Punkte oder Linien) zu Ihrem Startbildschirm hinzuzufügen oder als Lesezeichen zu speichern für schnellen Zugriff.</p>';
+            }
+            return `
+                <h4><i class="fas fa-mobile-alt"></i> App manuell installieren:</h4>
+                ${specificInstructions}
+                <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary); margin-top: 10px;">Die genauen Schritte und Bezeichnungen können je nach Browser und Version variieren.</p>
+            `;
+        }
+    }
+
+    class PWAStrategyRouter {
+        constructor() {
+            this.browserInfo = detectBrowserPWASupport();
+            this.strategy = null;
+            this.installButtonInHeader = document.getElementById('installPwaButton');
+            this.customInstallBannerEl = document.getElementById('customInstallBanner');
+            this.selectStrategy();
+            console.log("PWAStrategyRouter initialized. Browser Info:", this.browserInfo, "Selected strategy:", this.strategy.constructor.name);
+        }
+
+        selectStrategy() {
+            if (this.browserInfo.supportsBeforeInstallPrompt && (this.browserInfo.isChrome || this.browserInfo.isEdge || (this.browserInfo.isFirefox && this.browserInfo.isAndroid) || this.browserInfo.isSamsungBrowser || this.browserInfo.isOpera)) {
+                this.strategy = new AutomaticInstallStrategy();
+            } else if (this.browserInfo.isSafari && this.browserInfo.isIOS) {
+                this.strategy = new IOSManualStrategy();
+            } else if (this.browserInfo.isFirefox && this.browserInfo.isDesktop) {
+                this.strategy = new FirefoxDesktopStrategy();
+            } else {
+                this.strategy = new FallbackStrategy(this.browserInfo);
+            }
+        }
+
+        async execute() {
+            console.log('PWAStrategyRouter: Executing strategy...');
+            if (this.strategy && typeof this.strategy.initialize === 'function') {
+                await this.strategy.initialize(this);
+            }
+
+            const hasDeferredPrompt = (this.strategy instanceof AutomaticInstallStrategy && this.strategy.deferredPrompt != null) || (window.deferredPrompt != null);
+            this.updateInstallButtonVisibility(this.browserInfo.supportsBeforeInstallPrompt && hasDeferredPrompt && !this.browserInfo.isInStandaloneMode);
+
+            if (this.strategy && typeof this.strategy.showInstallPrompt === 'function') {
+                this.strategy.showInstallPrompt();
+            }
+            this.setupSettingsInstallButton();
+
+        // Setup custom banner listeners
+        if (this.customInstallBannerEl) {
+            const bannerInstallBtn = document.getElementById('customInstallBannerButton');
+            const bannerDismissBtn = document.getElementById('customInstallBannerDismiss');
+
+            if (bannerInstallBtn) {
+                bannerInstallBtn.addEventListener('click', async () => {
+                    console.log('Custom Install Banner install button clicked.');
+                    const promptToUse = (this.strategy instanceof AutomaticInstallStrategy && this.strategy.deferredPrompt) ? this.strategy.deferredPrompt : window.deferredPrompt;
+                    if (promptToUse) {
+                        promptToUse.prompt();
+                        try {
+                            const choiceResult = await promptToUse.userChoice;
+                            if (choiceResult.outcome === 'accepted') {
+                                console.log('User accepted the A2HS prompt from custom banner.');
+                                this.customInstallBannerEl.style.display = 'none'; // Hide banner
+                                this.updateInstallButtonVisibility(false); // Hide header button too
+                                this.setupSettingsInstallButton(); // Refresh settings section
+                            } else {
+                                console.log('User dismissed the A2HS prompt from custom banner.');
+                                this.customInstallBannerEl.style.display = 'none'; // Hide banner on dismiss
+                            }
+                        } catch (error) {
+                            console.error('Error with userChoice from custom banner:', error);
+                            this.customInstallBannerEl.style.display = 'none';
+                        }
+                        if (this.strategy instanceof AutomaticInstallStrategy) this.strategy.deferredPrompt = null;
+                        window.deferredPrompt = null; // Consume prompt
+                    } else {
+                        this.customInstallBannerEl.style.display = 'none'; // Should not happen if button is visible
+                    }
+                });
+            }
+            if (bannerDismissBtn) {
+                bannerDismissBtn.addEventListener('click', () => {
+                    this.customInstallBannerEl.style.display = 'none';
+                    console.log('Custom install banner dismissed.');
+                    // Optionally, set a flag in localStorage to not show again for a while
+                    // localStorage.setItem('customInstallBannerDismissed', 'true');
+                });
+            }
+        }
+        }
+
+        updateInstallButtonVisibility(show) {
+            const isStandalone = this.browserInfo.isInStandaloneMode;
+            if (this.installButtonInHeader) {
+                this.installButtonInHeader.style.display = (show && !isStandalone) ? 'inline-flex' : 'none';
+                // console.log(`PWAStrategy: Header install button visibility set to ${(show && !isStandalone) ? 'visible' : 'hidden'}`);
+            }
+
+            if (this.customInstallBannerEl) {
+                 // Show banner if:
+                 // 1. 'show' is true (a prompt is likely available)
+                 // 2. Not in standalone mode
+                 // 3. Strategy is one where a banner makes sense (Automatic or Fallback for browsers that might have a prompt)
+                 // 4. The header button itself isn't already visible (to avoid double prompting immediately)
+                 const canShowBanner = show &&
+                                     !isStandalone &&
+                                     (this.strategy instanceof AutomaticInstallStrategy || (this.strategy instanceof FallbackStrategy && this.browserInfo.supportsBeforeInstallPrompt));
+
+                 if (canShowBanner) {
+                    // Further refine: only show if header button isn't already doing the job, or after a delay/dismissal of header.
+                    // For now, a simple approach: if header button is hidden (e.g. by user scroll or other UI)
+                    // and prompt is still available, banner could show.
+                    // Or, show if header button is visible but user hasn't interacted.
+                    // Let's make it so it shows if a prompt is available, and it's not iOS/Firefox Desktop.
+                    const promptIsActuallyAvailable = (this.strategy instanceof AutomaticInstallStrategy && this.strategy.deferredPrompt) || window.deferredPrompt;
+                    this.customInstallBannerEl.style.display = promptIsActuallyAvailable ? 'block' : 'none';
+                    // console.log(`PWAStrategy: Custom install banner visibility set to ${promptIsActuallyAvailable ? 'visible' : 'hidden'}`);
+                 } else {
+                    this.customInstallBannerEl.style.display = 'none';
+                 }
+            }
+        }
+
+        setupSettingsInstallButton() {
+            const settingsContent = document.getElementById('settingsContent');
+            if (!settingsContent) { console.error("PWAStrategy: settingsContent element not found."); return; }
+
+            let installSection = document.getElementById('pwaInstallSection');
+            if (installSection) installSection.remove();
+
+            installSection = document.createElement('div');
+            installSection.id = 'pwaInstallSection';
+            installSection.className = 'form-group';
+            const hr = document.createElement('hr');
+            hr.style.margin = "2rem 0";
+
+            const dataExportGroup = Array.from(settingsContent.children).find(child => child.textContent && child.textContent.includes("Daten Exportieren"));
+            if (dataExportGroup) {
+                settingsContent.insertBefore(hr, dataExportGroup);
+                settingsContent.insertBefore(installSection, dataExportGroup);
+            } else {
+                settingsContent.appendChild(hr);
+                settingsContent.appendChild(installSection);
+            }
+
+            if (this.browserInfo.isInStandaloneMode) {
+                installSection.innerHTML = '<p><i class="fas fa-check-circle" style="color: var(--success-gradient);"></i> Die App ist bereits auf diesem Gerät installiert.</p>';
+                this.updateInstallButtonVisibility(false);
+                return;
+            }
+
+            let buttonText = "App installieren & Offline nutzen";
+            let subText = "Für schnellen Zugriff und Offline-Funktionen.";
+            if (this.strategy instanceof IOSManualStrategy) { buttonText = "Anleitung: App auf iOS installieren"; subText = "iOS erfordert manuelle Schritte über Safari."; }
+            else if (this.strategy instanceof FirefoxDesktopStrategy) { buttonText = "Anleitung: App für Firefox Desktop"; subText = "Firefox Desktop benötigt ggf. Add-ons oder manuelle Verknüpfungen."; }
+            else if (this.strategy instanceof FallbackStrategy && !(this.browserInfo.isFirefox && this.browserInfo.isAndroid)) { buttonText = "Anleitung: App manuell hinzufügen"; subText = "Für andere Browser oder manuelle Einrichtung."; }
+            else if (this.strategy instanceof AutomaticInstallStrategy && !this.strategy.deferredPrompt && !window.deferredPrompt) {
+                 buttonText = "Installationshinweise"; subText = "Die App kann eventuell manuell zum Startbildschirm hinzugefügt werden.";
+            }
+
+            installSection.innerHTML = `
+                <label class="form-label" style="font-size: 1.1em;">App-Installation</label>
+                <p style="font-size: 0.9em; color: var(--text-secondary); margin-bottom: 1rem;">${subText}</p>
+                <button id="settingsInstallPwaButton" class="btn btn-large" style="width:100%; margin-bottom:1rem;">
+                    <i class="fas fa-download"></i> ${buttonText}
+                </button>
+                <div id="pwaInstallInstructions" style="display:none; margin-top:1rem; padding:1rem; background:var(--bg-primary); border: 1px solid var(--bg-tertiary); border-radius:var(--radius-md); box-shadow: var(--shadow-sm);">
+                </div>
+            `;
+
+            const settingsInstallBtn = document.getElementById('settingsInstallPwaButton');
+            const instructionsDiv = document.getElementById('pwaInstallInstructions');
+
+            if (settingsInstallBtn && instructionsDiv) {
+                settingsInstallBtn.onclick = () => {
+                    const promptToUse = (this.strategy instanceof AutomaticInstallStrategy && this.strategy.deferredPrompt) ? this.strategy.deferredPrompt : window.deferredPrompt;
+
+                    if (promptToUse) {
+                        promptToUse.prompt();
+                        promptToUse.userChoice.then(choiceResult => {
+                            if (choiceResult.outcome === 'accepted') {
+                                console.log('User accepted the A2HS prompt from settings button');
+                                instructionsDiv.innerHTML = '<p><i class="fas fa-check-circle"></i> App wird installiert. Sie finden sie auf Ihrem Startbildschirm.</p>';
+                                instructionsDiv.style.display = 'block';
+                                settingsInstallBtn.style.display = 'none';
+                                this.updateInstallButtonVisibility(false);
+                            } else {
+                                console.log('User dismissed the A2HS prompt from settings button');
+                                if (this.strategy && typeof this.strategy.getInstallInstructionsHTML === 'function') {
+                                   instructionsDiv.innerHTML = this.strategy.getInstallInstructionsHTML();
+                                   instructionsDiv.style.display = 'block';
+                                }
+                            }
+                            if (this.strategy instanceof AutomaticInstallStrategy) this.strategy.deferredPrompt = null;
+                            window.deferredPrompt = null;
+                        }).catch(err => console.error("Error on userChoice from settings:", err));
+                    } else if (this.strategy && typeof this.strategy.getInstallInstructionsHTML === 'function') {
+                        const currentInstructionsHTML = this.strategy.getInstallInstructionsHTML();
+                        instructionsDiv.innerHTML = currentInstructionsHTML;
+                        if (instructionsDiv.style.display === 'block' && instructionsDiv.innerHTML === currentInstructionsHTML && !(this.strategy instanceof FirefoxDesktopStrategy) ) {
+                             instructionsDiv.style.display = 'none';
+                        } else {
+                             instructionsDiv.style.display = 'block';
+                        }
+                        if (this.strategy instanceof FirefoxDesktopStrategy && instructionsDiv.style.display === 'block') {
+                             instructionsDiv.innerHTML = this.strategy.getInstallInstructionsHTML(); // Regenerate for fresh blob URLs
+                        }
+                    } else {
+                         instructionsDiv.innerHTML = "<p>Keine spezifischen Installationsanweisungen für diesen Browser verfügbar oder die App ist bereits installiert/nicht installierbar.</p>";
+                         instructionsDiv.style.display = 'block';
+                    }
+                };
+            }
+        }
+    }
+    // --- End of PWA Installation Strategy Logic ---
     </script>
     <script>
    let deferredPrompt;
    const installPwaButton = document.getElementById('installPwaButton'); // This ID will be for the button added in the next step
 
    window.addEventListener('beforeinstallprompt', (e) => {
-     // Prevent Chrome 67 and earlier from automatically showing the prompt
-     e.preventDefault();
-     // Stash the event so it can be triggered later.
-     deferredPrompt = e;
-     // Update UI to notify the user they can add to home screen
-     if (installPwaButton) {
-       installPwaButton.style.display = 'block'; // Or 'inline-block', 'flex', etc.
-       console.log('`beforeinstallprompt` event fired, install button shown.');
-     } else {
-       console.log('`beforeinstallprompt` event fired, but install button not found yet.');
-     }
-   });
+             console.log('Global beforeinstallprompt event fired.');
+             window.deferredPrompt = e; // Stash globally
+             // The AutomaticInstallStrategy's listener should also capture this.
+             // If router is already initialized, its strategy would handle preventDefault and visibility.
+             // This is a fallback if the strategy isn't ready or misses it.
+             if (!(window.pwaRouterInstance && window.pwaRouterInstance.strategy instanceof AutomaticInstallStrategy && window.pwaRouterInstance.strategy.deferredPrompt)) {
+                e.preventDefault();
+                const installPwaButton = document.getElementById('installPwaButton');
+                if (installPwaButton && (!window.pwaRouterInstance || !window.pwaRouterInstance.browserInfo.isInStandaloneMode)) {
+                  installPwaButton.style.display = 'inline-flex';
+                }
+             }
+           });
 
    if (installPwaButton) {
-     installPwaButton.addEventListener('click', async () => {
-       // Hide our user interface that shows our A2HS button
-       installPwaButton.style.display = 'none';
-       if (deferredPrompt) {
-         // Show the prompt
-         deferredPrompt.prompt();
-         // Wait for the user to respond to the prompt
-         try {
-           const choiceResult = await deferredPrompt.userChoice;
-           if (choiceResult.outcome === 'accepted') {
-             console.log('User accepted the A2HS prompt');
-           } else {
-             console.log('User dismissed the A2HS prompt');
+             installPwaButton.addEventListener('click', async () => {
+               console.log('Header installPwaButton clicked.');
+               const router = window.pwaRouterInstance;
+               const strategy = router ? router.strategy : null;
+               const promptToUse = (strategy instanceof AutomaticInstallStrategy && strategy.deferredPrompt) ? strategy.deferredPrompt : window.deferredPrompt;
+
+               if (promptToUse) {
+                 installPwaButton.style.display = 'none';
+                 promptToUse.prompt();
+                 try {
+                   const choiceResult = await promptToUse.userChoice;
+                   if (choiceResult.outcome === 'accepted') {
+                     console.log('User accepted the A2HS prompt from header button.');
+                   } else {
+                     console.log('User dismissed the A2HS prompt from header button.');
+                   }
+                 } catch (error) {
+                   console.error('Error with userChoice from header button:', error);
+                 }
+                 if (strategy instanceof AutomaticInstallStrategy) strategy.deferredPrompt = null;
+                 window.deferredPrompt = null;
+                 if(router) router.updateInstallButtonVisibility(false);
+               } else {
+                 console.log('Header install button clicked, but no deferredPrompt available.');
+                 if (router) {
+                    switchTab('settings', new Event('click'));
+                    const settingsInstallBtn = document.getElementById('settingsInstallPwaButton');
+                    const instructionsDiv = document.getElementById('pwaInstallInstructions');
+                    if(settingsInstallBtn && instructionsDiv && (instructionsDiv.style.display === 'none' || !instructionsDiv.innerHTML.includes('<h4>'))) {
+                       settingsInstallBtn.click();
+                    }
+                 }
+               }
+             });
            }
-         } catch (error) {
-           console.error('Error with userChoice:', error);
-         }
-         // We've used the prompt, and can't use it again, discard it
-         deferredPrompt = null;
-       } else {
-         console.log('Install button clicked, but no deferredPrompt available.');
-       }
-     });
-   }
 
    window.addEventListener('appinstalled', () => {
      // Hide the install button if the app is installed
