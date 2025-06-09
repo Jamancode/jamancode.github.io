@@ -2572,9 +2572,17 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="tripGewaesser">Gewässer</label>
-                            <select class="form-control" id="tripGewaesser" required>
-                            </select>
+                            <label class="form-label" for="selectedTripLocationInfo">Ort / Gewässer</label>
+                            <div class="location-input-group">
+                                <div id="selectedTripLocationInfo" class="location-display-control" onclick="openUniversalMapModal('selectLocationForTrip', 'tripGewaesserHidden', 'tripLocationCoordsStore', 'updateSelectedTripLocationInfo')" title="Ort auf Karte wählen oder Gewässer aus Universal-Karte auswählen">
+                                    <span style="color: var(--text-secondary);">Ort auf Karte wählen oder Gewässer auswählen</span>
+                                </div>
+                                <button type="button" class="btn btn-map" onclick="openUniversalMapModal('selectLocationForTrip', 'tripGewaesserHidden', 'tripLocationCoordsStore', 'updateSelectedTripLocationInfo')" title="Ort/Gewässer auf Karte auswählen/anlegen">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                </button>
+                            </div>
+                            <input type="hidden" id="tripGewaesserHidden">
+                            <input type="hidden" id="tripLocationCoordsStore">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="tripNotes">Notizen</label>
@@ -3407,6 +3415,37 @@ function updateSelectedCatchGewaesserInfo(gewaesserId, locationCoords) {
     document.getElementById('catchLocationCoordsStore').value = locationCoords || '';
 }
 
+function updateSelectedTripLocationInfo(gewaesserId, coords) {
+    const displayDiv = document.getElementById('selectedTripLocationInfo');
+    const gewaesserIdInput = document.getElementById('tripGewaesserHidden');
+    const coordsInput = document.getElementById('tripLocationCoordsStore');
+
+    if (!displayDiv || !gewaesserIdInput || !coordsInput) {
+        console.error("Trip location display/input elements not found for updateSelectedTripLocationInfo!");
+        return;
+    }
+
+    let htmlContent = '';
+    if (gewaesserId) {
+        const gewaesserName = getGewaesserName(gewaesserId);
+        htmlContent += `Gewässer: <strong>${gewaesserName || 'Unbekanntes Gewässer'}</strong>`;
+    }
+
+    if (coords) {
+        if (htmlContent !== '') {
+            htmlContent += ' | ';
+        }
+        htmlContent += `Ort: <strong>${coords}</strong>`;
+    }
+
+    if (htmlContent === '') {
+        htmlContent = '<span style="color: var(--text-secondary);">Ort auf Karte wählen oder Gewässer auswählen</span>';
+    }
+
+    displayDiv.innerHTML = htmlContent;
+    gewaesserIdInput.value = gewaesserId || '';
+    coordsInput.value = coords || '';
+}
 
 // Universal Map Modal Functions
 function openUniversalMapModal(context, targetGewaesserIdFieldId, targetCoordsFieldId, displayCallbackName, showSidebar = true) {
@@ -3464,6 +3503,20 @@ function openUniversalMapModal(context, targetGewaesserIdFieldId, targetCoordsFi
             if (newSpotContainerEl) newSpotContainerEl.style.display = 'block';
             if (newGewaesserTypeContainer) newGewaesserTypeContainer.style.display = 'block';
             catchMapInstructionsEl.textContent = "Wählen Sie ein Gewässer, markieren Sie einen Angelplatz oder legen Sie ein neues Gewässer an.";
+            currentGewaesserIdValue = document.getElementById(universalMapTargetInputGewaesserId).value;
+            currentCoordsStrValue = document.getElementById(universalMapTargetInputCoords).value;
+            break;
+        case 'selectLocationForTrip':
+            modalTitleEl.textContent = "Ort/Gewässer für Trip auswählen";
+            newSpotSectionTitleEl.textContent = "Neuen Spot für Trip anlegen";
+            newSpotNameLabelEl.textContent = "Name für neuen Spot (optional):";
+            newSpotNameInputEl.placeholder = "Z.B. Hausbucht links";
+            newSpotInstructionsEl.textContent = "Markieren Sie einen Punkt auf der Karte. Der Spot wird mit Koordinaten benannt, falls kein Name angegeben wird, oder als neues Gewässer (Typ Spot) gespeichert, wenn ein Name angegeben wird.";
+            if (newSpotContainerEl) newSpotContainerEl.style.display = 'block';
+            // newGewaesserTypeContainer should remain hidden for this context (implicit type 'spot' if named)
+            if (newGewaesserTypeContainer) newGewaesserTypeContainer.style.display = 'none';
+            newSpotNameInputEl.disabled = false; // Ensure name input is enabled
+            catchMapInstructionsEl.textContent = "Wählen Sie ein Gewässer aus der Liste, markieren Sie einen neuen Angelplatz auf der Karte oder klicken Sie einfach auf eine Position.";
             currentGewaesserIdValue = document.getElementById(universalMapTargetInputGewaesserId).value;
             currentCoordsStrValue = document.getElementById(universalMapTargetInputCoords).value;
             break;
@@ -3719,7 +3772,7 @@ function saveCatchLocationFromMap() {
     let gewaesserIdToStore = selectedGewaesserForCatchMap || universalMapEditingGewaesserId || null;
     let locationCoordsToStore = null;
     let newSpotNameFromInput = document.getElementById('newSpotNameInput').value.trim();
-    let newGewaesserType = document.getElementById('newGewaesserType_universalMap').value;
+    let newGewaesserTypeFromUniversalMap = document.getElementById('newGewaesserType_universalMap').value; // Renamed for clarity
 
 
     if (tempCatchLocationMarker) {
@@ -3775,9 +3828,27 @@ function saveCatchLocationFromMap() {
             if(map && document.getElementById('gewaesser-tab').classList.contains('active')) addGewaesserToMap(newGewaesserData);
             loadGewaesserMarkersToUniversalMap(); populateCatchMapGewaesserList();
             alert(`Neues Gewässer/Spot "${finalNewName}" wurde angelegt.`);
-        } else if (universalMapContext !== 'selectCatchLocation') {
-             alert("Neuanlage abgebrochen, da kein Name vergeben wurde."); return;
+        } else if (universalMapContext !== 'selectCatchLocation' && universalMapContext !== 'selectLocationForTrip') { // Adjusted condition
+             alert("Neuanlage abgebrochen, da kein Name vergeben wurde.");
+             closeCatchLocationMapModal(); // Close if creation is cancelled
+             return; // Important to stop further processing
         }
+    } else if (universalMapContext === 'selectLocationForTrip' && !gewaesserIdToStore && locationCoordsToStore && newSpotNameFromInput) {
+        // Specific logic for 'selectLocationForTrip' when a new spot is named
+        const newGewaesserData = {
+            id: Date.now(), name: newSpotNameFromInput, type: 'spot', // Implicitly 'spot' type
+            location: locationCoordsToStore, fishTypes: [], notes: 'Neuer Spot für Trip angelegt.', size: '', depth: null
+        };
+        gewaesser.push(newGewaesserData);
+        gewaesserIdToStore = newGewaesserData.id; // This ID will be passed to the callback
+        saveData();
+        populateGewaesserSelects();
+        updateGewaesserList(); // For main Gewässer tab
+        if(map && document.getElementById('gewaesser-tab').classList.contains('active')) addGewaesserToMap(newGewaesserData);
+        loadGewaesserMarkersToUniversalMap(); // Refresh map modal's own list
+        populateCatchMapGewaesserList();
+        alert(`Neuer Spot "${newSpotNameFromInput}" wurde angelegt und für den Trip ausgewählt.`);
+        // If newSpotNameFromInput is empty for 'selectLocationForTrip', gewaesserIdToStore remains null, and only coords are used.
     }
 
     if (universalMapTargetInputGewaesserId) {
@@ -4456,18 +4527,22 @@ function handleTripPlanningSubmit(event) {
     });
 
     const tripTypeDisplayName = document.getElementById('tripTypeSelect').value; // Anzeigename
+    const tripGewaesserId = document.getElementById('tripGewaesserHidden').value;
+    const tripLocationCoordinates = document.getElementById('tripLocationCoordsStore').value;
+
     const tripData = {
         id: tripId || Date.now(),
         date: document.getElementById('tripDate').value,
         time: document.getElementById('tripTime').value,
         type: tripTypeDisplayName, // Speichere den Anzeigenamen der Angelart
-        gewaesserId: document.getElementById('tripGewaesser').value,
+        gewaesserId: tripGewaesserId || null,
+        locationCoords: tripLocationCoordinates || null,
         participants: participantsData,
         equipment: equipmentDataForTrip,
         notes: document.getElementById('tripNotes').value
     };
 
-    if (!tripData.date || !tripData.gewaesserId || !tripData.type) { alert("Bitte Datum, Angelart und Gewässer angeben."); return; }
+    if (!tripData.date || (!tripData.gewaesserId && !tripData.locationCoords) || !tripData.type) { alert("Bitte Datum, Angelart und einen Ort (Gewässer oder Kartenpunkt) angeben."); return; }
 
     if (tripId) {
         const index = plannedTrips.findIndex(t => t.id === tripId);
