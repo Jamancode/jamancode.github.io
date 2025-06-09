@@ -5231,6 +5231,9 @@ function refreshProbabilities(event) { // event hinzugefügt
                             this.setupSettingsInstallButton();
                         } catch (error) {
                             console.error('Error with userChoice from custom banner (fallback):', error);
+                    // Add router UI updates here as well for consistency
+                    this.updateInstallButtonVisibility(false);
+                    this.setupSettingsInstallButton();
                             this.customInstallBannerEl.style.display = 'none';
                         }
                         window.deferredPrompt = null; // Consume prompt
