@@ -3091,22 +3091,6 @@ function updateSelectedTripLocationInfo(gewaesserId, coords) {
     displayDiv.innerHTML = html;
     gewaesserIdInput.value = gewaesserId || '';
     coordsInput.value = coords || '';
-
-    // Optional: If a Gewässer is selected via map, also update the main tripGewaesser select
-    const tripGewaesserSelect = document.getElementById('tripGewaesser');
-    if (gewaesserId && tripGewaesserSelect) {
-        if (Array.from(tripGewaesserSelect.options).some(opt => opt.value === gewaesserId)) {
-            tripGewaesserSelect.value = gewaesserId;
-        } else {
-            // If the Gewässer selected on map is not in the dropdown (e.g. a new one created via map)
-            // you might want to add it, or simply leave the dropdown as is.
-            // For now, we'll just try to select it if it exists.
-            console.log("Selected Gewässer from map not found in tripGewaesser select dropdown. This might be a new Gewässer.");
-        }
-    } else if (!gewaesserId && tripGewaesserSelect && universalMapContext === 'selectLocationForTrip') {
-        // If only coords are selected (no Gewässer ID), clear the main Gewässer select
-        // tripGewaesserSelect.value = ''; // Decided against this to avoid confusion if user selected Gewässer first, then map spot.
-    }
 }
 
 function updatePlannedDurationDisplay(value) {
@@ -4555,17 +4539,14 @@ function handleTripPlanningSubmit(event) {
 
     const tripGewaesserHidden = document.getElementById('tripGewaesserHidden').value;
     const tripLocationCoordsStore = document.getElementById('tripLocationCoordsStore').value;
-    const mainGewaesserSelectValue = document.getElementById('tripGewaesser').value;
+    // const mainGewaesserSelectValue = document.getElementById('tripGewaesser').value; // Removed
 
     const tripData = {
         id: tripId || Date.now(),
         date: document.getElementById('tripDate').value,
         time: document.getElementById('tripTime').value,
         type: tripTypeDisplayName, // This is already correctly getting the display name
-        // If specific coordinates are set from the map, and no specific Gewässer ID came from the map's hidden field,
-        // then this trip is for a map point without a defined Gewässer entity.
-        // In this case, gewaesserId should be null/empty, even if the main dropdown had a value.
-        gewaesserId: (tripLocationCoordsStore && !tripGewaesserHidden) ? null : (tripGewaesserHidden || mainGewaesserSelectValue),
+        gewaesserId: tripGewaesserHidden || null, // Ensures it's null if tripGewaesserHidden is empty
         tripLocationCoords: tripLocationCoordsStore || null, // Store specific map coordinates
         participants: participantsData,
         equipment: equipmentDataForTrip,
@@ -4573,7 +4554,6 @@ function handleTripPlanningSubmit(event) {
     };
 
     if (!tripData.date || !tripData.type) { alert("Bitte Datum und Angelart angeben."); return; }
-    // The Gewässer check should now consider that a location can be just coordinates
     if (!tripData.gewaesserId && !tripData.tripLocationCoords) {
         alert("Bitte Gewässer oder einen Ort auf der Karte auswählen."); return;
     }
