@@ -5048,6 +5048,7 @@ function refreshProbabilities(event) { // event hinzugefügt
                     <li style="margin-bottom: 10px;">Bestätigen Sie den Namen der App (kann angepasst werden) und tippen Sie dann oben rechts auf "<strong>Hinzufügen</strong>".</li>
                 </ol>
                 <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App erscheint nun als Icon auf Ihrem Home-Bildschirm und kann wie eine normale App gestartet werden, inklusive Offline-Funktionen.</p>
+                <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary); margin-top: 10px;"><strong>Hinweis für Chrome-Nutzer auf iOS:</strong> Auch wenn Sie Chrome auf iOS verwenden, erfolgt das Hinzufügen zum Home-Bildschirm über Safari wie oben beschrieben. Die so installierte PWA lässt sich dann wie gewohnt nutzen und kann auch über Chrome aufgerufen werden, wenn dieser Ihr Standardbrowser ist oder Links entsprechend geöffnet werden.</p>
             `;
         }
     }
@@ -5080,6 +5081,7 @@ function refreshProbabilities(event) { // event hinzugefügt
             return `
                 <h4><i class="fab fa-firefox-browser"></i> App für Firefox Desktop einrichten:</h4>
                 <p style="text-align: left;">Firefox Desktop erfordert für eine PWA-ähnliche Erfahrung meist eine Browser-Erweiterung oder manuelle Verknüpfungen.</p>
+                <p style="text-align: left; font-weight: bold; color: var(--text-primary);">Hinweis für Chrome-Nutzer (Desktop): Google Chrome bietet in der Regel eine direktere PWA-Installationsoption über das Chrome-Menü (oft drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i> -> "Dein Angelfreund installieren..."). Die folgenden Schritte sind spezifisch für Firefox.</p>
                 <strong style="display: block; margin-top: 10px; text-align: left;">Option 1: Mit Browser-Erweiterung (Empfohlen für App-Feeling)</strong>
                 <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
                     <li style="margin-bottom: 5px;">Installieren Sie die Erweiterung "PWAsForFirefox":
@@ -5113,6 +5115,7 @@ function refreshProbabilities(event) { // event hinzugefügt
                         <li style="margin-bottom: 10px;">Suchen Sie nach der Option "<strong>Installieren</strong>" oder "<strong>Seite</strong>" und dann "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
                         <li style="margin-bottom: 10px;">Bestätigen Sie das Hinzufügen.</li>
                     </ol>
+                    <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary); margin-top: 5px;">(Hinweis: Google Chrome auf Android bietet in der Regel eine direktere "App installieren"-Option im Menü, wie im Abschnitt für Chrome & Chromium-basierte Android-Browser beschrieben.)</p>
                 `;
             } else if (this.browserInfo.isSamsungBrowser) {
                 specificInstructions = `
@@ -5124,6 +5127,7 @@ function refreshProbabilities(event) { // event hinzugefügt
                         <li style="margin-bottom: 10px;">Wählen Sie "<strong>Startbildschirm</strong>".</li>
                     </ol>
                     <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Auf Samsung Geräten wird oft eine vollwertige App (WebAPK) erstellt, auf anderen Android-Geräten eine Verknüpfung.</p>
+                    <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary); margin-top: 5px;">(Für Google Chrome auf Android finden Sie separate Installationshinweise im entsprechenden Abschnitt.)</p>
                 `;
             } else if (this.browserInfo.isOpera) {
                  specificInstructions = `
@@ -5132,11 +5136,12 @@ function refreshProbabilities(event) { // event hinzugefügt
                         <li style="margin-bottom: 10px;">Tippen Sie auf das <strong>Menü-Symbol</strong> (oft das Opera-Logo oder drei Punkte).</li>
                         <li style="margin-bottom: 10px;">Suchen Sie nach einer Option wie "<strong>Startbildschirm</strong>" oder "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
                     </ol>
+                    <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary); margin-top: 5px;">(Für Google Chrome auf Android finden Sie separate Installationshinweise im entsprechenden Abschnitt.)</p>
                 `;
             } else if (this.browserInfo.isChromiumBased) {
                 if (this.browserInfo.isDesktop) {
                     specificInstructions = `
-                        <h4><i class="fab fa-chrome"></i> App auf Chromium-basiertem Desktop-Browser installieren:</h4>
+                        <h4><i class="fab fa-chrome"></i> App auf Google Chrome & Chromium-basierten Desktop-Browsern installieren:</h4>
                         <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
                             <li style="margin-bottom: 10px;">Öffnen Sie das Browser-Menü (meist drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i> oder ein ähnliches Symbol oben rechts).</li>
                             <li style="margin-bottom: 10px;">Suchen Sie nach einer Option wie "<strong>Dein Angelfreund installieren...</strong>" oder "<strong>App installieren...</strong>". Diese Option ist oft direkt im Hauptmenü sichtbar.</li>
@@ -5144,11 +5149,11 @@ function refreshProbabilities(event) { // event hinzugefügt
                             <li style="margin-bottom: 10px;">Wenn Sie "Verknüpfung erstellen..." wählen, stellen Sie sicher, dass die Option "<strong>In Fenster öffnen</strong>" aktiviert ist, um das beste App-Erlebnis zu erzielen.</li>
                             <li style="margin-bottom: 10px;">Klicken Sie auf "<strong>Installieren</strong>" oder "<strong>Erstellen</strong>".</li>
                         </ol>
-                        <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App sollte nun über eine Verknüpfung auf Ihrem Desktop oder in Ihrem Anwendungsmenü verfügbar sein. Der genaue Wortlaut kann je nach spezifischem Chromium-Browser (z.B. Brave, Vivaldi, Opera) leicht variieren.</p>
+                        <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App sollte nun über eine Verknüpfung auf Ihrem Desktop oder in Ihrem Anwendungsmenü verfügbar sein. Der genaue Wortlaut kann je nach spezifischem Chromium-Browser (z.B. Google Chrome, Microsoft Edge, Brave, Vivaldi, Opera) leicht variieren.</p>
                     `;
                 } else if (this.browserInfo.isAndroid) {
                     specificInstructions = `
-                        <h4><i class="fab fa-android"></i> App auf Chromium-basiertem Android-Browser installieren:</h4>
+                        <h4><i class="fab fa-android"></i> App auf Google Chrome & Chromium-basierten Android-Browsern installieren:</h4>
                         <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
                             <li style="margin-bottom: 10px;">Tippen Sie auf das Browser-Menü (meist drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i>).</li>
                             <li style="margin-bottom: 10px;">Suchen Sie nach der Option "<strong>App installieren</strong>" oder "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
@@ -5158,12 +5163,12 @@ function refreshProbabilities(event) { // event hinzugefügt
                     `;
                 } else { // Fallback for other Chromium OS
                      specificInstructions = `
-                        <h4><i class="fab fa-chrome"></i> App auf Chromium-basiertem Browser installieren:</h4>
+                        <h4><i class="fab fa-chrome"></i> App auf Google Chrome & Chromium-basiertem Browser installieren:</h4>
                         <p style="text-align: left;">Versuchen Sie, diese Seite über das Browsermenü (oft drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i>) zu Ihrem Startbildschirm hinzuzufügen oder als App zu installieren. Die genauen Schritte können je nach Browserversion und Betriebssystem variieren.</p>
                      `;
                 }
             } else {
-                specificInstructions = '<p style="text-align: left;">Für Ihren Browser: Versuchen Sie, diese Seite über das Browsermenü (oft drei Punkte oder Linien) zu Ihrem Startbildschirm hinzuzufügen oder als Lesezeichen zu speichern für schnellen Zugriff.</p>';
+                specificInstructions = '<p style="text-align: left;">Für Ihren Browser: Versuchen Sie, diese Seite über das Browsermenü (oft drei Punkte oder Linien) zu Ihrem Startbildschirm hinzuzufügen oder als Lesezeichen zu speichern für schnellen Zugriff. Wenn Sie Google Chrome verwenden, suchen Sie bitte gezielt nach Installationsoptionen direkt im Chrome-Menü.</p>';
             }
             return `
                 <h4><i class="fas fa-mobile-alt"></i> App manuell installieren:</h4>
