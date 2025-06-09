@@ -5109,24 +5109,25 @@ function refreshProbabilities(event) { // event hinzugefügt
                     specificInstructions = `
                         <h4><i class="fab fa-chrome"></i> App auf Chromium-basiertem Desktop-Browser installieren:</h4>
                         <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
-                            <li style="margin-bottom: 10px;">Öffnen Sie das Browser-Menü (oft drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i> oben rechts).</li>
-                            <li style="margin-bottom: 10px;">Suchen Sie nach "<strong>Weitere Tools</strong>" und wählen Sie dann "<strong>Verknüpfung erstellen...</strong>" oder eine ähnliche Option wie "<strong>App installieren...</strong>" oder "<strong>[App-Name] installieren...</strong>".</li>
-                            <li style="margin-bottom: 10px;">Wenn die Option "<strong>In Fenster öffnen</strong>" verfügbar ist, aktivieren Sie diese für ein besseres App-Erlebnis.</li>
-                            <li style="margin-bottom: 10px;">Klicken Sie auf "<strong>Erstellen</strong>" oder "<strong>Installieren</strong>".</li>
+                            <li style="margin-bottom: 10px;">Öffnen Sie das Browser-Menü (meist drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i> oder ein ähnliches Symbol oben rechts).</li>
+                            <li style="margin-bottom: 10px;">Suchen Sie nach einer Option wie "<strong>Dein Angelfreund installieren...</strong>" oder "<strong>App installieren...</strong>". Diese Option ist oft direkt im Hauptmenü sichtbar.</li>
+                            <li style="margin-bottom: 10px;">Alternativ suchen Sie nach "<strong>Weitere Tools</strong>" und wählen dann "<strong>Verknüpfung erstellen...</strong>".</li>
+                            <li style="margin-bottom: 10px;">Wenn Sie "Verknüpfung erstellen..." wählen, stellen Sie sicher, dass die Option "<strong>In Fenster öffnen</strong>" aktiviert ist, um das beste App-Erlebnis zu erzielen.</li>
+                            <li style="margin-bottom: 10px;">Klicken Sie auf "<strong>Installieren</strong>" oder "<strong>Erstellen</strong>".</li>
                         </ol>
-                        <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App sollte nun über eine Verknüpfung auf Ihrem Desktop oder in Ihrem Anwendungsmenü verfügbar sein.</p>
+                        <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App sollte nun über eine Verknüpfung auf Ihrem Desktop oder in Ihrem Anwendungsmenü verfügbar sein. Der genaue Wortlaut kann je nach spezifischem Chromium-Browser (z.B. Brave, Vivaldi, Opera) leicht variieren.</p>
                     `;
                 } else if (this.browserInfo.isAndroid) {
                     specificInstructions = `
                         <h4><i class="fab fa-android"></i> App auf Chromium-basiertem Android-Browser installieren:</h4>
                         <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
-                            <li style="margin-bottom: 10px;">Tippen Sie auf das Browser-Menü (oft drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i>).</li>
-                            <li style="margin-bottom: 10px;">Suchen Sie nach der Option "<strong>Zum Startbildschirm hinzufügen</strong>" oder "<strong>App installieren</strong>".</li>
+                            <li style="margin-bottom: 10px;">Tippen Sie auf das Browser-Menü (meist drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i>).</li>
+                            <li style="margin-bottom: 10px;">Suchen Sie nach der Option "<strong>App installieren</strong>" oder "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
                             <li style="margin-bottom: 10px;">Folgen Sie den Anweisungen auf dem Bildschirm, um die App hinzuzufügen.</li>
                         </ol>
                         <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App erscheint dann als Icon auf Ihrem Startbildschirm.</p>
                     `;
-                } else { // Fallback for other Chromium OS (e.g., ChromeOS, though it should ideally use AutomaticInstallStrategy if prompt is supported)
+                } else { // Fallback for other Chromium OS
                      specificInstructions = `
                         <h4><i class="fab fa-chrome"></i> App auf Chromium-basiertem Browser installieren:</h4>
                         <p style="text-align: left;">Versuchen Sie, diese Seite über das Browsermenü (oft drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i>) zu Ihrem Startbildschirm hinzuzufügen oder als App zu installieren. Die genauen Schritte können je nach Browserversion und Betriebssystem variieren.</p>
