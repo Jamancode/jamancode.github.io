@@ -14,6 +14,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180x180.png">
     <link rel="apple-touch-icon" sizes="167x167" href="images/icon-180x180.png">
     <!-- Fallback for 167x167, using 180x180 as specific 167 is not available -->
+    <link rel="apple-touch-icon" sizes="152x152" href="images/icon-152x152.png">
     <link rel="apple-touch-icon" href="images/icon-192x192.png">
     <!-- Default icon without specific size, often picked up by older iOS or as a general fallback -->
 
@@ -4941,7 +4942,8 @@ function refreshProbabilities(event) { // event hinzugefügt
             isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/Chromium/.test(ua) && !/Edg/.test(ua) && !/OPR\//.test(ua) && !/SamsungBrowser/.test(ua);
         }
 
-        const isChrome = /Chrome/.test(ua) && !/Edg/.test(ua) && !isSafari && !/OPR\//.test(ua) && !/SamsungBrowser/.test(ua);
+        const isChromiumBased = (/Chrome/.test(ua) || /Chromium/.test(ua)) && !/Edg/.test(ua) && !isSafari && !/OPR\//.test(ua) && !/SamsungBrowser/.test(ua);
+        const isChrome = isChromiumBased; // isChrome can now be an alias or used if specific Chrome-only features are ever needed
         const isEdge = /Edg/.test(ua);
         const isFirefox = /Firefox/.test(ua) && !/Seamonkey/.test(ua); // Exclude Seamonkey
         const isSamsungBrowser = /SamsungBrowser/.test(ua);
@@ -4952,7 +4954,8 @@ function refreshProbabilities(event) { // event hinzugefügt
         return {
             isIOS,
             isSafari,
-            isChrome,
+            isChrome, // Retains isChrome, now effectively isChromiumBased
+            isChromiumBased, // Explicitly add isChromiumBased
             isEdge,
             isFirefox,
             isSamsungBrowser,
@@ -5011,7 +5014,7 @@ function refreshProbabilities(event) { // event hinzugefügt
                 <h4><i class="fab fa-apple"></i> App auf iOS installieren:</h4>
                 <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
                     <li style="margin-bottom: 10px;">Stellen Sie sicher, dass Sie diese Seite in <strong>Safari</strong> geöffnet haben. Andere Browser auf iOS unterstützen diese Funktion möglicherweise nicht.</li>
-                    <li style="margin-bottom: 10px;">Tippen Sie auf das <strong>Teilen-Symbol</strong> (ein Quadrat mit einem Pfeil nach oben: <i class="fas fa-share-square" style="display: inline-block; width: 20px; text-align: center;"></i> ) in der Menüleiste von Safari (meistens unten).</li>
+                    <li style="margin-bottom: 10px;">Tippen Sie auf das <strong>Teilen-Symbol</strong> (ein Quadrat mit einem Pfeil nach oben: <i class="fas fa-share-square" style="font-size: 1.2em; display: inline-block; width: 22px; text-align: center; vertical-align: middle;"></i> ) in der Menüleiste von Safari (je nach Gerät und iOS-Version meist unten oder oben).</li>
                     <li style="margin-bottom: 10px;">Scrollen Sie in der Liste der Optionen nach unten und suchen Sie nach "<strong>Zum Home-Bildschirm</strong>". Tippen Sie darauf.</li>
                     <li style="margin-bottom: 10px;">Bestätigen Sie den Namen der App (kann angepasst werden) und tippen Sie dann oben rechts auf "<strong>Hinzufügen</strong>".</li>
                 </ol>
@@ -5101,6 +5104,34 @@ function refreshProbabilities(event) { // event hinzugefügt
                         <li style="margin-bottom: 10px;">Suchen Sie nach einer Option wie "<strong>Startbildschirm</strong>" oder "<strong>Zum Startbildschirm hinzufügen</strong>".</li>
                     </ol>
                 `;
+            } else if (this.browserInfo.isChromiumBased) {
+                if (this.browserInfo.isDesktop) {
+                    specificInstructions = `
+                        <h4><i class="fab fa-chrome"></i> App auf Chromium-basiertem Desktop-Browser installieren:</h4>
+                        <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
+                            <li style="margin-bottom: 10px;">Öffnen Sie das Browser-Menü (oft drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i> oben rechts).</li>
+                            <li style="margin-bottom: 10px;">Suchen Sie nach "<strong>Weitere Tools</strong>" und wählen Sie dann "<strong>Verknüpfung erstellen...</strong>" oder eine ähnliche Option wie "<strong>App installieren...</strong>" oder "<strong>[App-Name] installieren...</strong>".</li>
+                            <li style="margin-bottom: 10px;">Wenn die Option "<strong>In Fenster öffnen</strong>" verfügbar ist, aktivieren Sie diese für ein besseres App-Erlebnis.</li>
+                            <li style="margin-bottom: 10px;">Klicken Sie auf "<strong>Erstellen</strong>" oder "<strong>Installieren</strong>".</li>
+                        </ol>
+                        <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App sollte nun über eine Verknüpfung auf Ihrem Desktop oder in Ihrem Anwendungsmenü verfügbar sein.</p>
+                    `;
+                } else if (this.browserInfo.isAndroid) {
+                    specificInstructions = `
+                        <h4><i class="fab fa-android"></i> App auf Chromium-basiertem Android-Browser installieren:</h4>
+                        <ol style="padding-left: 20px; text-align: left; list-style-type: decimal;">
+                            <li style="margin-bottom: 10px;">Tippen Sie auf das Browser-Menü (oft drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i>).</li>
+                            <li style="margin-bottom: 10px;">Suchen Sie nach der Option "<strong>Zum Startbildschirm hinzufügen</strong>" oder "<strong>App installieren</strong>".</li>
+                            <li style="margin-bottom: 10px;">Folgen Sie den Anweisungen auf dem Bildschirm, um die App hinzuzufügen.</li>
+                        </ol>
+                        <p style="text-align: left; font-size: 0.9em; color: var(--text-secondary);">Die App erscheint dann als Icon auf Ihrem Startbildschirm.</p>
+                    `;
+                } else { // Fallback for other Chromium OS (e.g., ChromeOS, though it should ideally use AutomaticInstallStrategy if prompt is supported)
+                     specificInstructions = `
+                        <h4><i class="fab fa-chrome"></i> App auf Chromium-basiertem Browser installieren:</h4>
+                        <p style="text-align: left;">Versuchen Sie, diese Seite über das Browsermenü (oft drei Punkte <i class="fas fa-ellipsis-v" aria-hidden="true"></i>) zu Ihrem Startbildschirm hinzuzufügen oder als App zu installieren. Die genauen Schritte können je nach Browserversion und Betriebssystem variieren.</p>
+                     `;
+                }
             } else {
                 specificInstructions = '<p style="text-align: left;">Für Ihren Browser: Versuchen Sie, diese Seite über das Browsermenü (oft drei Punkte oder Linien) zu Ihrem Startbildschirm hinzuzufügen oder als Lesezeichen zu speichern für schnellen Zugriff.</p>';
             }
@@ -5123,7 +5154,8 @@ function refreshProbabilities(event) { // event hinzugefügt
         }
 
         selectStrategy() {
-            if (this.browserInfo.supportsBeforeInstallPrompt && (this.browserInfo.isChrome || this.browserInfo.isEdge || (this.browserInfo.isFirefox && this.browserInfo.isAndroid) || this.browserInfo.isSamsungBrowser || this.browserInfo.isOpera)) {
+            // Use isChromiumBased here for broader compatibility including DuckDuckGo and other Chromium variants
+            if (this.browserInfo.supportsBeforeInstallPrompt && (this.browserInfo.isChromiumBased || this.browserInfo.isEdge || (this.browserInfo.isFirefox && this.browserInfo.isAndroid) || this.browserInfo.isSamsungBrowser || this.browserInfo.isOpera)) {
                 this.strategy = new AutomaticInstallStrategy();
             } else if (this.browserInfo.isSafari && this.browserInfo.isIOS) {
                 this.strategy = new IOSManualStrategy();
