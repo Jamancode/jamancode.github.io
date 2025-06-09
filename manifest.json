@@ -10,6 +10,7 @@
   "orientation": "portrait-primary",
   "background_color": "#0a1a2e",
   "theme_color": "#16213e",
+  "id": "/?source=pwa",
   "icons": [
     {
       "src": "images/icon-16x16.png",
@@ -90,6 +91,22 @@
       "short_name": "Stats",
       "description": "Fangstatistiken und Analysen anzeigen",
       "url": "/PWA/index.html?action=statistics"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "images/placeholder-screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Desktop App View"
+    },
+    {
+      "src": "images/placeholder-screenshot-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile App View"
     }
   ],
   "categories": [
