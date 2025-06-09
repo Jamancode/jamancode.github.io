@@ -2577,6 +2577,23 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <span class="form-label">Ort auf Karte auswählen/Gewässer</span>
+                            <div class="location-input-group">
+                                <div id="selectedTripLocationInfo" class="location-display-control"
+                                     onclick="openUniversalMapModal('selectLocationForTrip', 'tripGewaesserHidden', 'tripLocationCoordsStore', 'updateSelectedTripLocationInfo')"
+                                     title="Ausgewählten Ort/Gewässer anzeigen">
+                                    <span style="color: var(--text-secondary);">Ort auf Karte wählen oder Gewässer auswählen</span>
+                                </div>
+                                <button type="button" class="btn btn-map"
+                                        onclick="openUniversalMapModal('selectLocationForTrip', 'tripGewaesserHidden', 'tripLocationCoordsStore', 'updateSelectedTripLocationInfo')"
+                                        title="Ort auf Karte auswählen/Gewässer auswählen oder neues anlegen">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                </button>
+                            </div>
+                            <input type="hidden" id="tripGewaesserHidden"> <!-- Hält die ID des ausgewählten Gewässers für den Trip -->
+                            <input type="hidden" id="tripLocationCoordsStore"> <!-- Hält die spezifischen Koordinaten für den Trip -->
+                        </div>
+                        <div class="form-group">
                             <label class="form-label" for="tripNotes">Notizen</label>
                             <textarea class="form-control" id="tripNotes" rows="3"></textarea>
                         </div>
@@ -2853,18 +2870,33 @@ function updateApiKeyStatus() {
 function loadData() {
     catches = JSON.parse(localStorage.getItem('catches') || '[]');
     angelgangs = JSON.parse(localStorage.getItem('angelgangs') || '[]');
-    gewaesser = JSON.parse(localStorage.getItem('gewaesser') || '[]');
+    // MODIFIED FOR TESTING: Ensure test Gewässer are present
+    const initialGewaesser = [{id: 1, name: 'Test See', type: 'lake', location: '50.1,10.1'}, {id: 2, name: 'Test Fluss', type: 'river', location: '50.2,10.2'}];
+    const storedGewaesser = JSON.parse(localStorage.getItem('gewaesser') || '[]');
+    gewaesser = storedGewaesser.length > 0 ? storedGewaesser : initialGewaesser;
+    if (storedGewaesser.length === 0) { // If localStorage was empty, save the initial test data
+        localStorage.setItem('gewaesser', JSON.stringify(initialGewaesser));
+    }
+    // END MODIFICATION FOR TESTING
     userEquipmentSets = JSON.parse(localStorage.getItem('userEquipmentSets') || '[]');
     currentAngelgang = JSON.parse(localStorage.getItem('currentAngelgang') || 'null');
     pressureHistory = JSON.parse(localStorage.getItem('pressureHistory') || '[]');
-    plannedTrips = JSON.parse(localStorage.getItem('plannedTrips') || '[]');
+    // MODIFIED FOR TESTING: Ensure plannedTrips is empty and other necessary arrays are initialized
+    plannedTrips = []; // JSON.parse(localStorage.getItem('plannedTrips') || '[]');
+    localStorage.setItem('plannedTrips', JSON.stringify(plannedTrips)); // Clear for tests
+
     const defaultFishingTypes = ["Spinnfischen", "Grundangeln", "Posenfischen", "Fliegenfischen", "Feederangeln", "Köderfischen", "Ultraleicht Angeln", "Friedfisch", "Raubfisch", "Allgemein", "Andere Methode"];
-    fishingTypes = JSON.parse(localStorage.getItem('fishingTypes') || JSON.stringify(defaultFishingTypes));
-    defaultFishingTypes.forEach(dft => { if (!fishingTypes.includes(dft)) fishingTypes.push(dft);});
+    const storedFishingTypes = JSON.parse(localStorage.getItem('fishingTypes') || 'null');
+    fishingTypes = storedFishingTypes || defaultFishingTypes;
+    if (!storedFishingTypes) localStorage.setItem('fishingTypes', JSON.stringify(fishingTypes));
+    else defaultFishingTypes.forEach(dft => { if (!fishingTypes.includes(dft)) fishingTypes.push(dft);});
 
 
     const defaultEquipment = [ { id: 'rute_spinn_std', name: "Spinnrute Standard", category: "Spinnfischen" }, { id: 'koederbox_hecht_std', name: "Köderbox Hecht", category: "Spinnfischen" }, { id: 'rute_grund_std', name: "Grundrute Standard", category: "Grundangeln" }, { id: 'futterkorb_std', name: "Futterkorb Set", category: "Feederangeln" }, { id: 'rute_fliege_std', name: "Fliegenrute #5/6", category: "Fliegenfischen" }, { id: 'fliegendose_std', name: "Fliegendose Nymphen", category: "Fliegenfischen" }, { id: 'kescher_std', name: "Unterfangkescher", category: "Allgemein" }, { id: 'messer_std', name: "Filetiermesser", category: "Allgemein" }, { id: 'stuhl_std', name: "Angelstuhl", category: "Allgemein" }, { id: 'schirm_std', name: "Angelschirm", category: "Allgemein" }, { id: 'zange_std', name: "Lösezange", category: "Allgemein" }, { id: 'grill_std', name: "Campinggrill", category: "Allgemein" }, { id: 'getraenke_std', name: "Getränke", category: "Allgemein" }];
-    equipmentCatalog = JSON.parse(localStorage.getItem('equipmentCatalog') || JSON.stringify(defaultEquipment));
+    const storedEquipmentCatalog = JSON.parse(localStorage.getItem('equipmentCatalog') || 'null');
+    equipmentCatalog = storedEquipmentCatalog || defaultEquipment;
+    if(!storedEquipmentCatalog) localStorage.setItem('equipmentCatalog', JSON.stringify(equipmentCatalog));
+    // END MODIFICATION FOR TESTING
 
     if (currentAngelgang && currentAngelgang.startTime && !currentAngelgang.paused) {
         startAngelgangTimer();
@@ -3034,6 +3066,49 @@ function updateSelectedAngelgangGewaesserInfo(gewaesserId, coords) {
     document.getElementById('selectedGewaesserHidden').value = gewaesserId || '';
     document.getElementById('angelgangGewaesserCoordsStore').value = coords || '';
 }
+
+function updateSelectedTripLocationInfo(gewaesserId, coords) {
+    const displayDiv = document.getElementById('selectedTripLocationInfo');
+    const gewaesserIdInput = document.getElementById('tripGewaesserHidden');
+    const coordsInput = document.getElementById('tripLocationCoordsStore');
+
+    if (!displayDiv || !gewaesserIdInput || !coordsInput) {
+        console.error("Trip location display/input elements not found!");
+        return;
+    }
+
+    let html = '';
+    if (gewaesserId) {
+        const gwName = getGewaesserName(gewaesserId);
+        html += `Gewässer: <strong>${gwName || 'Unbekanntes Gewässer'}</strong>`;
+    }
+    if (coords) {
+        html += `${gewaesserId ? ' | ' : ''}Ort: <strong>${coords}</strong>`;
+    }
+    if (!html) {
+        html = '<span style="color: var(--text-secondary);">Ort auf Karte wählen oder Gewässer auswählen</span>';
+    }
+    displayDiv.innerHTML = html;
+    gewaesserIdInput.value = gewaesserId || '';
+    coordsInput.value = coords || '';
+
+    // Optional: If a Gewässer is selected via map, also update the main tripGewaesser select
+    const tripGewaesserSelect = document.getElementById('tripGewaesser');
+    if (gewaesserId && tripGewaesserSelect) {
+        if (Array.from(tripGewaesserSelect.options).some(opt => opt.value === gewaesserId)) {
+            tripGewaesserSelect.value = gewaesserId;
+        } else {
+            // If the Gewässer selected on map is not in the dropdown (e.g. a new one created via map)
+            // you might want to add it, or simply leave the dropdown as is.
+            // For now, we'll just try to select it if it exists.
+            console.log("Selected Gewässer from map not found in tripGewaesser select dropdown. This might be a new Gewässer.");
+        }
+    } else if (!gewaesserId && tripGewaesserSelect && universalMapContext === 'selectLocationForTrip') {
+        // If only coords are selected (no Gewässer ID), clear the main Gewässer select
+        // tripGewaesserSelect.value = ''; // Decided against this to avoid confusion if user selected Gewässer first, then map spot.
+    }
+}
+
 function updatePlannedDurationDisplay(value) {
     document.getElementById('plannedDurationValueDisplay').textContent = value;
     document.getElementById('plannedDuration').value = value;
@@ -3466,6 +3541,18 @@ function openUniversalMapModal(context, targetGewaesserIdFieldId, targetCoordsFi
             catchMapInstructionsEl.textContent = "Wählen Sie ein Gewässer, markieren Sie einen Angelplatz oder legen Sie ein neues Gewässer an.";
             currentGewaesserIdValue = document.getElementById(universalMapTargetInputGewaesserId).value;
             currentCoordsStrValue = document.getElementById(universalMapTargetInputCoords).value;
+            break;
+        case 'selectLocationForTrip':
+            modalTitleEl.textContent = "Ort/Gewässer für Trip auswählen";
+            newSpotSectionTitleEl.textContent = "Neuen Spot/Gewässer für Trip anlegen";
+            newSpotNameLabelEl.textContent = "Name für neuen Spot/Gewässer (optional):";
+            newSpotNameInputEl.placeholder = "Z.B. Angelstelle X am See Y";
+            newSpotInstructionsEl.textContent = "Markieren Sie einen Punkt oder wählen Sie ein Gewässer. Ein Name ist optional, wenn nur Koordinaten gespeichert werden sollen.";
+            if (newSpotContainerEl) newSpotContainerEl.style.display = 'block';
+            if (newGewaesserTypeContainer) newGewaesserTypeContainer.style.display = 'block'; // Allow creating new Gewässer
+            catchMapInstructionsEl.textContent = "Wählen Sie ein Gewässer, markieren Sie einen spezifischen Ort oder legen Sie ein neues Gewässer an.";
+            currentGewaesserIdValue = document.getElementById(universalMapTargetInputGewaesserId)?.value;
+            currentCoordsStrValue = document.getElementById(universalMapTargetInputCoords)?.value;
             break;
         case 'createGewaesserViaMap':
             modalTitleEl.textContent = "Position für neues Gewässer festlegen";
@@ -4139,7 +4226,14 @@ function openTripPlanningModal(dateString = null, tripToEditId = null) {
             // Hier den Anzeigenamen der Angelart setzen, nicht den internen Key, falls unterschiedlich
             const tripTypeDisplayName = Object.keys(methodKeyMap).find(key => methodKeyMap[key] === trip.type) || trip.type;
             document.getElementById('tripTypeSelect').value = tripTypeDisplayName;
-            document.getElementById('tripGewaesser').value = trip.gewaesserId;
+            document.getElementById('tripGewaesser').value = trip.gewaesserId || ''; // Still set the main dropdown
+
+            // Call the new update function to populate map display elements
+            updateSelectedTripLocationInfo(trip.gewaesserId, trip.tripLocationCoords);
+
+            // Ensure hidden fields are also explicitly set if updateSelectedTripLocationInfo doesn't cover all edge cases
+            document.getElementById('tripGewaesserHidden').value = trip.gewaesserId || '';
+            document.getElementById('tripLocationCoordsStore').value = trip.tripLocationCoords || '';
             document.getElementById('tripNotes').value = trip.notes || '';
             document.getElementById('equipmentFilterType').value = tripTypeDisplayName; // Setzt Filter auf die Angelart des Trips
 
@@ -4151,12 +4245,14 @@ function openTripPlanningModal(dateString = null, tripToEditId = null) {
             document.getElementById('tripDate').value = dateString || new Date().toISOString().split('T')[0];
             addTripParticipantField();
             populateTripEquipmentList(document.getElementById('tripTypeSelect').value);
+            updateSelectedTripLocationInfo(null, null); // Ensure map display is cleared
         }
     } else {
         document.getElementById('tripPlanningModalTitle').textContent = "Angel-Trip planen";
         document.getElementById('tripDate').value = dateString || new Date().toISOString().split('T')[0];
         addTripParticipantField();
         populateTripEquipmentList(document.getElementById('tripTypeSelect').value);
+        updateSelectedTripLocationInfo(null, null); // Ensure map display is cleared
     }
     modal.classList.add('active');
 }
@@ -4456,18 +4552,31 @@ function handleTripPlanningSubmit(event) {
     });
 
     const tripTypeDisplayName = document.getElementById('tripTypeSelect').value; // Anzeigename
+
+    const tripGewaesserHidden = document.getElementById('tripGewaesserHidden').value;
+    const tripLocationCoordsStore = document.getElementById('tripLocationCoordsStore').value;
+    const mainGewaesserSelectValue = document.getElementById('tripGewaesser').value;
+
     const tripData = {
         id: tripId || Date.now(),
         date: document.getElementById('tripDate').value,
         time: document.getElementById('tripTime').value,
-        type: tripTypeDisplayName, // Speichere den Anzeigenamen der Angelart
-        gewaesserId: document.getElementById('tripGewaesser').value,
+        type: tripTypeDisplayName, // This is already correctly getting the display name
+        // If specific coordinates are set from the map, and no specific Gewässer ID came from the map's hidden field,
+        // then this trip is for a map point without a defined Gewässer entity.
+        // In this case, gewaesserId should be null/empty, even if the main dropdown had a value.
+        gewaesserId: (tripLocationCoordsStore && !tripGewaesserHidden) ? null : (tripGewaesserHidden || mainGewaesserSelectValue),
+        tripLocationCoords: tripLocationCoordsStore || null, // Store specific map coordinates
         participants: participantsData,
         equipment: equipmentDataForTrip,
         notes: document.getElementById('tripNotes').value
     };
 
-    if (!tripData.date || !tripData.gewaesserId || !tripData.type) { alert("Bitte Datum, Angelart und Gewässer angeben."); return; }
+    if (!tripData.date || !tripData.type) { alert("Bitte Datum und Angelart angeben."); return; }
+    // The Gewässer check should now consider that a location can be just coordinates
+    if (!tripData.gewaesserId && !tripData.tripLocationCoords) {
+        alert("Bitte Gewässer oder einen Ort auf der Karte auswählen."); return;
+    }
 
     if (tripId) {
         const index = plannedTrips.findIndex(t => t.id === tripId);
