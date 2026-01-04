@@ -1,139 +1,16 @@
 {
-  "name": "Dein Angelfreund",
-  "short_name": "Dein Angelfreund",
-  "description": "Angel-Fangkalender mit Bisswahrscheinlichkeits-Algorithmus, Umweltdaten-Analyse, Solunar-Theorie und detaillierter Fangdokumentation. Dein persönliches Angel-Labor für maximalen Fangerfolg.",
-  "lang": "de-DE",
-  "dir": "ltr",
+  "name": "Kuzu Graph Master",
+  "short_name": "KuzuGraph",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#0a1a2e",
-  "theme_color": "#16213e",
-  "id": "/?source=pwa",
+  "background_color": "#000000",
+  "theme_color": "#00ff9d",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "images/icon-16x16.png",
-      "type": "image/png",
-      "sizes": "16x16",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icon-32x32.png",
-      "type": "image/png",
-      "sizes": "32x32",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icon-72x72.png",
-      "type": "image/png",
-      "sizes": "72x72",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icon-96x96.png",
-      "type": "image/png",
-      "sizes": "96x96",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icon-128x128.png",
-      "type": "image/png",
-      "sizes": "128x128",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icon-144x144.png",
-      "type": "image/png",
-      "sizes": "144x144",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icon-152x152.png",
-      "type": "image/png",
-      "sizes": "152x152",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icon-192x192.png",
-      "type": "image/png",
+      "src": "https://cdn-icons-png.flaticon.com/512/1055/1055666.png",
       "sizes": "192x192",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "images/icon-384x384.png",
-      "type": "image/png",
-      "sizes": "384x384",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icon-512x512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
-  ],
-  "shortcuts": [
-    {
-      "name": "Neuen Fang hinzufügen",
-      "short_name": "Fang+",
-      "description": "Schnell einen neuen Fang dokumentieren",
-      "url": "/PWA/index.html?action=add-catch"
-    },
-    {
-      "name": "Bisswahrscheinlichkeit heute",
-      "short_name": "Prognose",
-      "description": "Aktuelle Bisswahrscheinlichkeit und Wetterdaten",
-      "url": "/PWA/index.html?action=today-forecast"
-    },
-    {
-      "name": "Meine Statistiken",
-      "short_name": "Stats",
-      "description": "Fangstatistiken und Analysen anzeigen",
-      "url": "/PWA/index.html?action=statistics"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "images/placeholder-screenshot-desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Desktop App View"
-    },
-    {
-      "src": "images/placeholder-screenshot-mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Mobile App View"
-    }
-  ],
-  "categories": [
-    "sports",
-    "lifestyle",
-    "utilities",
-    "productivity"
-  ],
-  "iarc_rating_id": "e58c174a-81d2-5c3c-32cc-34b8de4a52e9",
-  "prefer_related_applications": false,
-  "related_applications": [],
-  "share_target": {
-    "action": "/PWA/index.html?share-target",
-    "method": "GET",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  },
-  "protocol_handlers": [
-    {
-      "protocol": "geo",
-      "url": "/PWA/index.html?coordinates=%s"
-    }
-  ],
-  "edge_side_panel": {
-    "preferred_width": 400
-  }
+  ]
 }
