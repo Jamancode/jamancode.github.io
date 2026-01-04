@@ -2,16 +2,15 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <!-- Viewport Fixes für Mobile Apps -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>Kùzu Graph Intelligence Suite</title>
+    <title>Kùzu Graph Intelligence</title>
     
     <link rel="manifest" href="./manifest.json">
-    <script src="./coi-serviceworker.js"></script>
     
-    <!-- Stable Libs -->
+    <!-- Bibliotheken -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="//unpkg.com/force-graph@1.43.0/dist/force-graph.min.js"></script>
 
@@ -20,14 +19,14 @@
             --bg: #000000;
             --panel: #111111;
             --border: #333333;
-            --primary: #00ff9d;
+            --primary: #00ff9d; /* Neon Green */
             --primary-dim: rgba(0, 255, 157, 0.1);
             --text: #eeeeee;
             --text-sec: #999999;
             --danger: #ff4b4b;
         }
 
-        /* RESET & BASE */
+        /* --- RESET & LAYOUT --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             margin: 0; background: var(--bg); color: var(--text);
@@ -37,8 +36,10 @@
             user-select: none;
         }
 
-        /* LAYOUT LAYERS */
+        /* --- VISUALISIERUNG --- */
         #graph-viz { position: absolute; inset: 0; z-index: 1; outline: none; }
+        
+        /* --- UI OVERLAY --- */
         .ui-layer {
             position: absolute; inset: 0; z-index: 10; pointer-events: none;
             display: flex; flex-direction: column; justify-content: space-between;
@@ -46,28 +47,28 @@
         }
         .pointer { pointer-events: auto; }
 
-        /* COMPONENTS */
-        /* Top Search */
-        .top-bar { padding: 16px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); display: flex; gap: 10px; }
-        .search-input-wrap {
+        /* HEADER */
+        .top-bar { 
+            padding: 16px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); 
+            display: flex; gap: 10px; align-items: center; 
+        }
+        .search-wrap {
             flex: 1; background: rgba(30,30,30,0.8); backdrop-filter: blur(10px);
             border: 1px solid var(--border); border-radius: 12px; height: 44px;
             display: flex; align-items: center; padding: 0 12px; transition: 0.2s;
         }
-        .search-input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-dim); }
-        .search-input-wrap input {
+        .search-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-dim); }
+        .search-wrap input {
             background: transparent; border: none; color: white; width: 100%; height: 100%;
-            font-size: 16px; margin-left: 8px; outline: none;
+            font-size: 16px; /* Verhindert iOS Zoom */ margin-left: 8px; outline: none;
         }
-        
-        /* Stats Chips */
         .stats-chip {
-            display: flex; align-items: center; background: rgba(0,0,0,0.6);
-            border: 1px solid var(--border); border-radius: 8px; padding: 0 10px;
-            font-size: 10px; color: var(--text-sec); height: 44px; white-space: nowrap;
+            background: rgba(0,0,0,0.6); border: 1px solid var(--border); 
+            border-radius: 8px; padding: 0 12px; font-size: 11px; color: var(--text-sec); 
+            height: 44px; display: flex; align-items: center;
         }
 
-        /* Bottom Menu */
+        /* BOTTOM NAVIGATION */
         .bottom-dock {
             background: linear-gradient(to top, rgba(0,0,0,1), transparent);
             padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom));
@@ -75,17 +76,15 @@
         }
         .nav-btn {
             background: rgba(20,20,20,0.9); border: 1px solid var(--border);
-            color: var(--text); border-radius: 16px; width: 60px; height: 60px;
+            color: var(--text); border-radius: 16px; width: 64px; height: 64px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 9px; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            transition: transform 0.1s, background 0.2s;
-            backdrop-filter: blur(5px);
+            font-size: 10px; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: transform 0.1s, background 0.2s; backdrop-filter: blur(5px);
         }
-        .nav-btn:active { transform: scale(0.92); background: #333; }
-        .nav-btn.active { border-color: var(--primary); color: var(--primary); }
+        .nav-btn:active { transform: scale(0.95); background: #333; }
         .nav-btn svg { width: 24px; height: 24px; }
 
-        /* Sheets (Modals) */
+        /* SHEETS (MODALS) */
         .sheet-backdrop {
             position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 50;
             display: flex; align-items: flex-end; opacity: 0; pointer-events: none;
@@ -99,16 +98,17 @@
             transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .sheet-backdrop.open .sheet { transform: translateY(0); }
+        
         .sheet-header {
             padding: 16px 20px; border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center;
-            font-weight: 600; font-size: 13px; letter-spacing: 0.5px;
+            font-weight: 600; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase;
         }
         .sheet-content { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
 
-        /* Form Elements */
+        /* FORM ELEMENTS */
         label { color: var(--text-sec); font-size: 11px; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        input, select {
+        input, select, textarea {
             width: 100%; background: #000; border: 1px solid var(--border); color: white;
             padding: 14px; border-radius: 12px; font-size: 16px; outline: none; appearance: none;
         }
@@ -119,17 +119,10 @@
         }
         button.danger-btn {
             background: transparent; border: 1px solid var(--danger); color: var(--danger);
-            padding: 12px; border-radius: 12px; width: 100%; margin-top: 20px;
+            padding: 12px; border-radius: 12px; width: 100%; margin-top: 20px; cursor: pointer;
         }
 
-        /* Upload Zone */
-        #drop-area {
-            border: 2px dashed #444; border-radius: 16px; padding: 30px;
-            text-align: center; background: rgba(255,255,255,0.02); transition: 0.2s;
-        }
-        #drop-area:active { background: rgba(0,255,157,0.1); border-color: var(--primary); }
-
-        /* Loader */
+        /* LOADER */
         #loader-overlay {
             position: absolute; inset: 0; background: #000; z-index: 100;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -139,9 +132,9 @@
             border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #log-output { font-family: monospace; font-size: 11px; color: #666; max-width: 80%; text-align: center; white-space: pre-wrap; }
+        #log-output { font-family: monospace; font-size: 11px; color: #666; max-width: 80%; text-align: center; white-space: pre-wrap; margin-top: 10px; }
 
-        /* Toast */
+        /* TOAST NOTIFICATION */
         #toast {
             position: absolute; top: 80px; left: 20px; right: 20px;
             background: rgba(30,30,30,0.95); border: 1px solid var(--border);
@@ -157,12 +150,12 @@
     <!-- SYSTEM LOADER -->
     <div id="loader-overlay">
         <div class="spinner"></div>
-        <div id="status-msg">BOOTING KÙZU GRAPH ENGINE...</div>
+        <div id="status-msg">SYSTEM BOOT...</div>
         <div id="log-output"></div>
-        <button id="reset-btn" class="hidden danger-btn" style="width:auto; margin-top:30px;" onclick="app.hardReset()">NOTFALL RESET</button>
+        <button id="reload-btn" class="hidden danger-btn" style="width:auto;" onclick="location.reload()">NEUSTART ERZWINGEN</button>
     </div>
 
-    <!-- GRAPH VISUALIZATION -->
+    <!-- GRAPH CANVAS -->
     <div id="graph-viz"></div>
 
     <!-- UI INTERFACE -->
@@ -170,14 +163,14 @@
         
         <!-- HEADER -->
         <div class="top-bar pointer">
-            <div class="search-input-wrap">
+            <div class="search-wrap">
                 <svg width="18" height="18" fill="none" stroke="#666" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" id="global-search" placeholder="Suchen & Filtern..." disabled>
+                <input type="text" id="global-search" placeholder="Suche & Filter..." disabled>
             </div>
             <div class="stats-chip" id="node-counter">0 Nodes</div>
         </div>
 
-        <!-- INFO TOAST -->
+        <!-- INFO POPUP -->
         <div id="toast" class="pointer" onclick="this.style.display='none'"></div>
 
         <!-- NAVIGATION -->
@@ -201,20 +194,19 @@
         </div>
     </div>
 
-    <!-- === SHEETS === -->
+    <!-- SHEETS -->
 
     <!-- IMPORT SHEET -->
     <div id="sheet-import" class="sheet-backdrop" onclick="if(event.target===this) ui.close()">
         <div class="sheet pointer">
-            <div class="sheet-header">Daten Importieren <span onclick="ui.close()">✕</span></div>
+            <div class="sheet-header">Daten Import <span onclick="ui.close()">✕</span></div>
             <div class="sheet-content">
-                <div id="drop-area" onclick="document.getElementById('file-input').click()">
-                    <div style="font-size:30px; margin-bottom:10px;">📄</div>
-                    <strong style="color:var(--primary)">CSV DATEI AUSWÄHLEN</strong><br>
-                    <small style="color:var(--text-sec)">Intelligenter Schema-Parser & Indexer</small>
+                <div onclick="document.getElementById('file-in').click()" style="border: 2px dashed #444; padding: 30px; text-align: center; border-radius: 16px; cursor: pointer; background:rgba(255,255,255,0.02)">
+                    <strong style="color:var(--primary)">+ CSV DATEI WÄHLEN</strong><br>
+                    <small style="color:var(--text-sec)">Auto-Schema & FTS Indexer</small>
                 </div>
-                <input type="file" id="file-input" hidden accept=".csv">
-                <div id="import-status" style="font-size:10px; color:#666; font-family:monospace;">Bereit.</div>
+                <input type="file" id="file-in" hidden accept=".csv">
+                <div id="import-msg" style="font-family:monospace; font-size:10px; color:#888;">System Bereit.</div>
             </div>
         </div>
     </div>
@@ -222,7 +214,7 @@
     <!-- CONNECT SHEET -->
     <div id="sheet-connect" class="sheet-backdrop" onclick="if(event.target===this) ui.close()">
         <div class="sheet pointer">
-            <div class="sheet-header">Tabellen Verknüpfen <span onclick="ui.close()">✕</span></div>
+            <div class="sheet-header">Verbinden <span onclick="ui.close()">✕</span></div>
             <div class="sheet-content">
                 <label>Quelle (Tabelle A)</label>
                 <select id="link-source"></select>
@@ -242,7 +234,6 @@
                 </div>
 
                 <button class="action-btn" onclick="app.createLink()">Verbindung Erstellen</button>
-                <p style="font-size:10px; color:#666; text-align:center;">Dies erstellt Kanten im Graphen basierend auf übereinstimmenden Werten.</p>
             </div>
         </div>
     </div>
@@ -250,12 +241,12 @@
     <!-- EXPORT SHEET -->
     <div id="sheet-export" class="sheet-backdrop" onclick="if(event.target===this) ui.close()">
         <div class="sheet pointer">
-            <div class="sheet-header">Daten Exportieren <span onclick="ui.close()">✕</span></div>
+            <div class="sheet-header">Export <span onclick="ui.close()">✕</span></div>
             <div class="sheet-content">
                 <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px;">
-                    <label>Aktuelle Ansicht</label>
-                    <div id="export-stats" style="font-size:14px; font-weight:bold; color:white;">0 Knoten ausgewählt</div>
-                    <p style="font-size:11px; color:#888;">Der Export enthält nur die aktuell gefilterten Daten (Suchergebnis).</p>
+                    <label>Aktueller Status</label>
+                    <div id="export-stats" style="font-size:14px; font-weight:bold; color:white;">0 Knoten sichtbar</div>
+                    <p style="font-size:11px; color:#888; margin-top:5px;">Der Export beinhaltet nur die aktuell gefilterten Daten.</p>
                 </div>
                 <button class="action-btn" onclick="app.exportCSV()">CSV Herunterladen</button>
                 <button class="danger-btn" onclick="app.hardReset()">Datenbank Löschen</button>
@@ -268,23 +259,36 @@
         <div class="sheet pointer">
             <div class="sheet-header">Cypher Konsole <span onclick="ui.close()">✕</span></div>
             <div class="sheet-content">
-                <textarea id="cypher-input" rows="5" style="font-family:monospace; color:var(--primary);">MATCH (n) RETURN n LIMIT 100</textarea>
-                <button class="action-btn" onclick="app.runQuery()">Query Ausführen</button>
+                <textarea id="cypher-input" rows="6" style="font-family:monospace; color:var(--primary);">MATCH (n) RETURN n LIMIT 100</textarea>
+                <button class="action-btn" onclick="app.runQuery()">Ausführen</button>
             </div>
         </div>
     </div>
 
+    <!-- APP LOGIC -->
     <script type="module">
+        // --- 1. SERVICE WORKER REGISTRATION (ZWINGEND!) ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./server-worker.js')
+            .then(reg => {
+                if (!navigator.serviceWorker.controller) {
+                    console.log("Worker registered. Reloading for activation...");
+                    window.location.reload();
+                }
+            })
+            .catch(err => console.error("Worker Error:", err));
+        }
+
         import { Database } from 'https://cdn.jsdelivr.net/npm/kuzu-wasm@0.4.2/dist/index.js';
 
         // --- KONFIGURATION ---
         const CONFIG = {
             cdn: 'https://cdn.jsdelivr.net/npm/kuzu-wasm@0.4.2/dist',
-            dbName: 'kuzu_master_db_v1', 
-            maxNodes: 2500, // Balance zwischen Performance und Datendichte
+            dbName: 'kuzu_pro_stable', 
+            maxNodes: 2000, // Safe limit für Mobile GPUs
         };
 
-        // --- UI CONTROLLER ---
+        // --- UI MANAGER ---
         window.ui = {
             open: (id) => {
                 document.querySelectorAll('.sheet-backdrop').forEach(e => e.classList.remove('open'));
@@ -292,20 +296,19 @@
                 if(id === 'connect') app.updateDropdowns();
                 if(id === 'export') {
                     const count = app.viz ? app.viz.graphData().nodes.length : 0;
-                    document.getElementById('export-stats').innerText = `${count} Knoten ausgewählt`;
+                    document.getElementById('export-stats').innerText = `${count} Knoten sichtbar`;
                 }
             },
             close: () => document.querySelectorAll('.sheet-backdrop').forEach(e => e.classList.remove('open')),
             log: (msg, type='info') => {
-                console.log(`[System] ${msg}`);
+                console.log(`[Sys] ${msg}`);
                 document.getElementById('status-msg').innerText = msg;
+                const imp = document.getElementById('import-msg');
+                if(imp) imp.innerText = msg;
+                
                 if(type === 'err') {
-                    const log = document.getElementById('log-output');
-                    log.innerText += `\nERROR: ${msg}`;
-                    document.getElementById('reset-btn').classList.remove('hidden');
-                } else {
-                    const imp = document.getElementById('import-status');
-                    if(imp) imp.innerText = msg;
+                    document.getElementById('log-output').innerText += `\n${msg}`;
+                    document.getElementById('reload-btn').classList.remove('hidden');
                 }
             },
             loader: (show) => {
@@ -314,13 +317,13 @@
             },
             toast: (html) => {
                 const t = document.getElementById('toast');
-                t.innerHTML = html;
-                t.style.display = 'block';
-                setTimeout(() => t.style.display='none', 8000); // 8 Sekunden sichtbar
+                t.innerHTML = html; t.style.display = 'block';
+                // Auto hide nach 5s
+                setTimeout(() => t.style.display='none', 5000);
             }
         };
 
-        // --- CORE APPLICATION ---
+        // --- CORE LOGIC ---
         class App {
             constructor() {
                 this.db = null;
@@ -331,28 +334,28 @@
 
             async init() {
                 try {
-                    // 1. Cross-Origin Check (Wichtig für GitHub Pages)
+                    // Check Isolation
                     if (!window.crossOriginIsolated) {
-                        ui.log("Warte auf Service Worker...");
-                        setTimeout(() => window.location.reload(), 1500); // Reload Loop fix
+                        ui.log("Warte auf Secure Context...");
+                        setTimeout(() => window.location.reload(), 1500);
                         return;
                     }
 
-                    // 2. Load Engine
-                    ui.log("Lade KùzuDB Engine...");
+                    // Load Engine
+                    ui.log("Lade Engine...");
                     const kuzu = await import(`${CONFIG.cdn}/index.js`);
                     kuzu.setWorkerPath(`${CONFIG.cdn}/worker.js`);
 
-                    // 3. Init Database (Persistent IDBFS)
-                    ui.log("Mounting Filesystem...");
+                    // Init DB
+                    ui.log("Mounting Database...");
                     this.db = await kuzu.Database.new(CONFIG.dbName, {
-                        bufferPoolSize: 1024 * 1024 * 128, // 128MB RAM für Mobile Stability
+                        bufferPoolSize: 1024 * 1024 * 128, // 128MB RAM Limit
                         fsType: 'idbfs'
                     });
                     this.conn = await this.db.connect();
 
-                    // 4. GUI Start
-                    ui.log("Starte Visualisierung...");
+                    // Start UI
+                    ui.log("Starte Grafik...");
                     await this.refreshMeta();
                     this.initGraph();
                     this.renderGraph();
@@ -364,7 +367,6 @@
                 }
             }
 
-            // --- DATA HANDLING ---
             async refreshMeta() {
                 try {
                     const res = await this.conn.query("CALL show_tables() RETURN *");
@@ -381,7 +383,7 @@
                 if(!file) return;
                 ui.close();
                 ui.loader(true);
-                ui.log("Analysiere Datei...");
+                ui.log("Analysiere CSV...");
 
                 Papa.parse(file, {
                     header: true, skipEmptyLines: true, dynamicTyping: true,
@@ -389,20 +391,20 @@
                         try {
                             const name = file.name.split('.')[0].replace(/[^a-zA-Z0-9]/g, '_');
                             // Schema Inference
-                            const headers = results.meta.fields.map(h => h.replace(/[^a-zA-Z0-9]/g, '') || "col");
+                            const headers = results.meta.fields.map(h => h.replace(/[^a-zA-Z0-9]/g, '') || "c");
                             const types = headers.map((h, i) => {
                                 const val = results.data[0][results.meta.fields[i]];
                                 return Number.isInteger(val) ? "INT64" : "STRING";
                             });
 
                             // Create Table
-                            ui.log(`Erstelle Tabelle '${name}'...`);
+                            ui.log(`Tabelle ${name}...`);
                             try { await this.conn.query(`DROP TABLE ${name}`); } catch(e){}
                             
                             const ddl = headers.map((h, i) => `${h} ${types[i]}`).join(", ");
                             await this.conn.query(`CREATE NODE TABLE ${name} (sys_id INT64, ${ddl}, PRIMARY KEY(sys_id))`);
 
-                            // Stream Insert (Batching)
+                            // Stream Insert (Chunked)
                             const BATCH = 500;
                             let queries = [];
                             let idBase = Date.now();
@@ -426,21 +428,19 @@
                                 }
                             }
 
-                            // Auto FTS Index
-                            ui.log("Indiziere Textdaten...");
+                            // Auto-Index
+                            ui.log("Indiziere...");
                             const strCol = headers.find((h, i) => types[i] === "STRING");
-                            if(strCol) {
-                                try { await this.conn.query(`CREATE FTS INDEX idx_${name} ON ${name}(${strCol})`); } catch(e){}
-                            }
+                            if(strCol) try { await this.conn.query(`CREATE FTS INDEX idx_${name} ON ${name}(${strCol})`); } catch(e){}
 
                             await this.refreshMeta();
                             await this.renderGraph();
                             ui.loader(false);
-                            alert("Import erfolgreich!");
+                            alert(`Import von '${name}' erfolgreich!`);
 
                         } catch(e) {
                             ui.loader(false);
-                            alert("Fehler: " + e.message);
+                            alert("Import Fehler: " + e.message);
                         }
                     }
                 });
@@ -452,11 +452,10 @@
                 const cs = document.getElementById('col-source').value;
                 const ct = document.getElementById('col-target').value;
 
-                if(!cs || !ct) return alert("Spalten fehlen.");
+                if(!cs || !ct) return alert("Spaltennamen fehlen.");
                 
-                ui.close();
-                ui.loader(true);
-                ui.log("Verarbeite Beziehungen...");
+                ui.close(); ui.loader(true);
+                ui.log("Verarbeite Link...");
 
                 try {
                     const rel = `LINK_${s}_${t}`;
@@ -467,7 +466,7 @@
                     
                     await this.renderGraph();
                     ui.loader(false);
-                    alert("Verknüpfung abgeschlossen.");
+                    alert("Verbindung erstellt!");
                 } catch(e) {
                     ui.loader(false);
                     alert("Link Fehler: " + e.message);
@@ -479,8 +478,6 @@
                 const nodes = this.viz.graphData().nodes;
                 if(nodes.length === 0) return alert("Nichts zu exportieren.");
 
-                // Flatten Data Logic
-                // Wir sammeln alle Keys aller Knoten für den Header
                 const allKeys = new Set(['id', 'label']);
                 nodes.forEach(n => Object.keys(n.details).forEach(k => {
                     if(k !== 'sys_id' && k !== '_label') allKeys.add(k);
@@ -488,7 +485,6 @@
                 const header = Array.from(allKeys);
                 
                 let csv = header.join(",") + "\n";
-                
                 nodes.forEach(n => {
                     const row = header.map(k => {
                         if(k === 'id') return n.id;
@@ -503,7 +499,7 @@
                 const blob = new Blob([csv], {type: 'text/csv'});
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url; a.download = `graph_export_${Date.now()}.csv`;
+                a.href = url; a.download = `kuzu_export_${Date.now()}.csv`;
                 a.click();
             }
 
@@ -520,7 +516,6 @@
                 }
             }
 
-            // --- VISUALIZATION ---
             initGraph() {
                 const el = document.getElementById('graph-viz');
                 this.viz = ForceGraph()(el)
@@ -533,10 +528,9 @@
                         this.viz.centerAt(node.x, node.y, 1000);
                         this.viz.zoom(4, 2000);
                         
-                        // Show Details Toast
-                        let h = `<strong style="color:var(--primary)">${node.group}</strong><br>`;
+                        let h = `<strong style="color:var(--primary); font-size:14px;">${node.group}</strong><hr style="border:0; border-top:1px solid #444; margin:5px 0;">`;
                         for(let k in node.details) {
-                            if(k!=='sys_id' && k!=='_label') h += `<div style="margin-top:2px"><span style="color:#888">${k}:</span> ${node.details[k]}</div>`;
+                            if(k!=='sys_id' && k!=='_label') h += `<div style="margin-top:2px"><span style="color:#888">${k}:</span> <span style="color:#eee">${node.details[k]}</span></div>`;
                         }
                         ui.toast(h);
                     })
@@ -563,7 +557,7 @@
                         [row.a, row.b].forEach(n => {
                             if(!n) return;
                             
-                            // Client-Side Filter (Schnellste Option für Mobile)
+                            // Client-Side Filter
                             if(filter) {
                                 const raw = JSON.stringify(n).toLowerCase();
                                 if(!raw.includes(filter.toLowerCase())) return;
@@ -592,16 +586,11 @@
             async runQuery() {
                 const q = document.getElementById('cypher-input').value;
                 ui.close();
-                if(q.toUpperCase().includes("RETURN") && !q.toUpperCase().includes("LIMIT")) {
-                    if(!confirm("Warnung: Queries ohne LIMIT können den Browser crashen. Fortfahren?")) return;
-                }
-                
                 if(q.toUpperCase().includes("RETURN")) {
-                   // Einfachheitshalber nutzen wir die Filter-Logik
-                   alert("Bitte nutzen Sie das Suchfeld für Visualisierungen. Die Konsole ist für DDL (CREATE/DELETE) optimiert.");
+                    alert("Bitte Suchfeld für Visualisierung nutzen. Konsole ist für CREATE/DELETE.");
                 } else {
                     await this.conn.query(q);
-                    alert("Query ausgeführt.");
+                    alert("Ausgeführt.");
                     await this.refreshMeta();
                     this.renderGraph();
                 }
@@ -615,10 +604,9 @@
             }
         }
 
-        // --- INIT ---
+        // --- STARTUP ---
         window.app = new App();
         
-        // Event Listeners
         document.getElementById('file-input').addEventListener('change', e => app.importCSV(e.target.files[0]));
         
         let debounce;
@@ -627,7 +615,7 @@
             debounce = setTimeout(() => app.renderGraph(e.target.value), 300);
         });
 
-        // Safe Start
+        // Warten auf DOM
         window.addEventListener('load', () => setTimeout(() => app.init(), 500));
 
     </script>
