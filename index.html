@@ -63,9 +63,9 @@
   --ff-mono: "JetBrains Mono",ui-monospace,monospace;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
-  --sheet-peek: 132px;
-  --sheet-half: 55vh;
-  --sheet-full: 92vh;
+  --sheet-peek: 10vh;
+  --sheet-half: 50vh;
+  --sheet-full: 100vh;
   --fab-size: 48px;
 }
 
@@ -126,18 +126,96 @@ header::after { content:""; position:absolute; left:0; right:0; bottom:-1px; hei
 .header-btn.primary { background:var(--terra); color:#141210; border-color:var(--terra); }
 .header-btn.primary:hover { background:var(--terra-soft); }
 
-/* ORS quota pill in header */
-.ors-pill {
-  display:none; align-items:center; gap:6px; padding:0 10px; height:30px; border-radius:100px;
-  background:var(--bg-3); border:1px solid var(--rule); color:var(--paper-dim);
-  font-family:var(--ff-mono); font-size:11px; letter-spacing:0.04em; cursor:pointer;
-  transition:all .15s;
+/* Header-Burger + Sections-Menü
+   Single-source-of-truth Navigation: immer erreichbar, deckt die Karte nicht zu,
+   funktioniert identisch auf Mobile und Desktop. Ersetzt die versteckten Inline-Tabs.
+   Menü öffnet rechts als kompakte Karte (desktop) oder als Bottom-Sheet (mobile). */
+.btn-burger {
+  width:38px; height:38px; display:inline-grid; place-items:center;
+  border-radius:10px; background:var(--bg-3); border:1px solid var(--rule);
+  color:var(--paper); cursor:pointer; transition:all .15s; position:relative;
 }
-.ors-pill.show { display:inline-flex; }
-.ors-pill:hover { border-color:var(--terra); color:var(--terra-soft); }
-.ors-pill.warn  { border-color:rgba(224,179,90,.55); color:var(--warn); }
-.ors-pill.danger{ border-color:rgba(224,121,114,.55); color:var(--danger); }
-.ors-pill .dot { width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.9; }
+.btn-burger:hover { border-color:var(--terra); color:var(--terra-soft); }
+.btn-burger[aria-expanded="true"] {
+  background:color-mix(in srgb, var(--terra) 20%, transparent);
+  border-color:var(--terra); color:var(--terra-soft);
+}
+.btn-burger .burger-dot {
+  position:absolute; top:6px; right:6px; width:6px; height:6px; border-radius:50%;
+  background:var(--terra); box-shadow:0 0 0 2px var(--bg-3);
+}
+
+.nav-backdrop {
+  position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:995;
+  opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.nav-backdrop.show { opacity:1; pointer-events:auto; }
+.nav-backdrop[hidden] { display:none; }
+
+.nav-panel {
+  position:fixed; z-index:996; background:var(--bg-1); border:1px solid var(--terra);
+  box-shadow:0 20px 48px rgba(0,0,0,.6); display:flex; flex-direction:column;
+  transform-origin:top right;
+}
+.nav-panel[hidden] { display:none; }
+.nav-panel .nph {
+  display:flex; align-items:center; gap:10px; padding:14px 16px;
+  border-bottom:1px solid var(--rule);
+}
+.nav-panel .nph-title { flex:1; font-family:var(--ff-display); font-size:15px; color:var(--paper); letter-spacing:.04em; }
+.nav-panel .nph-close {
+  width:32px; height:32px; border-radius:8px; background:var(--bg-3);
+  border:1px solid var(--rule); color:var(--paper); cursor:pointer;
+  display:grid; place-items:center; font-size:16px; line-height:1;
+}
+.nav-panel .nph-close:hover { border-color:var(--terra); color:var(--terra-soft); }
+.nav-list { list-style:none; margin:0; padding:8px; display:flex; flex-direction:column; gap:2px; overflow-y:auto; }
+.nav-item {
+  display:flex; align-items:center; gap:12px; padding:12px 14px;
+  background:transparent; border:1px solid transparent; border-radius:10px;
+  color:var(--paper); font-size:14px; text-align:left; cursor:pointer; width:100%;
+  min-height:48px;
+}
+.nav-item:hover, .nav-item:focus-visible { background:var(--bg-3); border-color:var(--rule); outline:none; }
+.nav-item[aria-current="true"] {
+  background:color-mix(in srgb, var(--terra) 18%, transparent);
+  border-color:color-mix(in srgb, var(--terra) 50%, transparent);
+  color:var(--terra-soft);
+}
+.nav-item[aria-current="true"]::after {
+  content:'●'; margin-left:auto; color:var(--terra-soft); font-size:9px;
+}
+.nav-item .ni-ic { font-size:18px; width:24px; text-align:center; flex-shrink:0; }
+.nav-item .ni-lb { font-weight:600; letter-spacing:.01em; }
+.nav-item .ni-sub { font-size:11.5px; color:var(--paper-dim); margin-top:2px; display:block; }
+.nav-item .ni-body { flex:1; min-width:0; }
+.nav-sep { height:1px; background:var(--rule); margin:6px 10px; }
+.nav-foot {
+  padding:10px 14px 14px; border-top:1px solid var(--rule);
+  font-size:11.5px; color:var(--paper-dim); line-height:1.45;
+  display:flex; flex-direction:column; gap:6px;
+}
+
+/* Desktop: Dropdown-Karte direkt unter dem Burger, die Karte bleibt sichtbar */
+@media (min-width: 720px) {
+  .nav-panel { top:62px; right:12px; width:320px; max-height:calc(100vh - 80px); border-radius:14px; }
+}
+/* Mobile: Bottom-Sheet, schließt nach Auswahl automatisch — verdeckt die Karte nur kurz */
+@media (max-width: 719px) {
+  .nav-panel {
+    left:0; right:0; bottom:0; max-height:78vh; border-left:0; border-right:0; border-bottom:0;
+    border-top:1px solid var(--terra); border-radius:18px 18px 0 0;
+    transform:translateY(100%); transition:transform .22s cubic-bezier(.2,.9,.3,1);
+  }
+  .nav-panel.show { transform:translateY(0); }
+  .nav-panel[hidden] { display:flex; } /* animieren statt display:none */
+  .nav-panel .nph { padding-top:18px; }
+  .nav-panel .nph::before {
+    content:''; position:absolute; top:6px; left:50%; transform:translateX(-50%);
+    width:44px; height:4px; border-radius:4px; background:var(--rule-strong);
+  }
+  .nav-panel .nph { position:relative; }
+}
 
 /* Status dot (generic, for modals/settings) */
 .status-dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--rule-strong); margin-right:6px; vertical-align:middle; }
@@ -225,74 +303,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   display:flex; flex-direction:column; overflow:hidden; position:relative; z-index:30;
 }
 
-/* Tabs – responsive: drop-bar auf Mobil, Inline-Tabs ab Tablet */
-.tabs-wrap { position:relative; border-bottom:1px solid var(--rule); background:var(--bg); flex-shrink:0; }
-.tabs {
-  display:flex; background:var(--bg);
-  overflow-x:auto; scrollbar-width:none;
-}
-.tabs::-webkit-scrollbar { display:none; }
-.tab {
-  flex:1 0 auto; min-width:0; padding:12px 10px; font-size:11px;
-  letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim);
-  border-bottom:2px solid transparent; transition:color .15s, border-color .15s;
-  white-space:nowrap; display:flex; flex-direction:column; align-items:center; gap:3px; line-height:1.1;
-}
-.tab .t-ic { font-size:16px; line-height:1; }
-.tab .t-lb { font-size:10.5px; }
-.tab:hover { color:var(--paper); }
-.tab.active { color:var(--terra-soft); border-bottom-color:var(--terra); }
-
-/* Drop-bar (Mobil) */
-.tabs-drop {
-  display:none; width:100%; padding:12px 14px; background:var(--bg);
-  color:var(--paper); border-bottom:1px solid var(--rule);
-  align-items:center; gap:10px; text-align:left; font-size:14px;
-}
-.tabs-drop:hover { background:var(--bg-2); }
-.tabs-drop[aria-expanded="true"] { background:var(--bg-2); }
-.tabs-drop-icon { font-size:18px; line-height:1; }
-.tabs-drop-label { flex:1; font-family:var(--ff-display); color:var(--paper); letter-spacing:.02em; }
-.tabs-drop-caret { color:var(--terra-soft); transition:transform .2s; }
-.tabs-drop[aria-expanded="true"] .tabs-drop-caret { transform:rotate(180deg); }
-
-.tabs-dropdown {
-  position:absolute; top:100%; left:0; right:0; z-index:30;
-  margin:0; padding:6px; background:var(--bg-2);
-  border:1px solid var(--rule-strong); border-top:0;
-  border-radius:0 0 10px 10px; box-shadow:var(--shadow-2);
-  list-style:none; display:flex; flex-direction:column; gap:2px;
-  max-height:min(70vh, 560px); overflow-y:auto;
-}
-.tabs-dropdown[hidden] { display:none; }
-.td-item {
-  width:100%; padding:12px 12px; display:flex; align-items:center; gap:12px;
-  color:var(--paper-dim); font-size:14px; border-radius:8px; text-align:left;
-  background:transparent; border:0; cursor:pointer;
-}
-.td-item:hover { background:var(--bg-3); color:var(--paper); }
-.td-item[aria-current="true"] {
-  background:color-mix(in srgb, var(--terra) 14%, transparent);
-  color:var(--paper);
-}
-.td-item[aria-current="true"]::after { content:'✓'; margin-left:auto; color:var(--terra-soft); }
-.td-ic { font-size:17px; width:22px; text-align:center; }
-
-/* Breakpoints: Mobil → Drop-bar, Tablet/Desktop → Inline-Tabs */
-@media (max-width: 719px) {
-  .tabs { display:none; }
-  .tabs-drop { display:flex; }
-}
-@media (min-width: 720px) and (max-width: 1023px) {
-  .tab { padding:10px 8px; }
-  .tab .t-lb { font-size:10px; }
-}
-@media (min-width: 1024px) {
-  .tab { padding:14px 12px; }
-  .tab { flex-direction:row; gap:6px; }
-  .tab .t-ic { font-size:14px; }
-  .tab .t-lb { font-size:11.5px; letter-spacing:0.12em; }
-}
+/* Tab-Navigation: alte Inline-Tabs + Drop-Bar entfernt — Navigation läuft
+   jetzt ausschließlich über den Burger oben im Header. Nur .tab-content /
+   .tab-panel bleiben; sie hosten den Inhalt des aktiven Bereichs. */
 .tab-content { flex:1; overflow-y:auto; padding:20px 20px calc(40px + var(--safe-bottom)); }
 .tab-panel { display:none; }
 .tab-panel.active { display:block; animation:fadeIn .25s ease; }
@@ -315,34 +328,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .fab.lg { width:56px; height:56px; }
 .fab.active { background:var(--terra); color:#141210; border-color:var(--terra); box-shadow:0 0 0 4px rgba(227,178,60,.2); }
 
-/* Pin-Modus – Crosshair über Kartenmitte + Bestätigungs-Leiste unten. */
+/* Pin-Modus – Crosshair folgt dem Zeiger (Maus / Finger) und „tippe = setzen".
+   Position wird per JS via translate3d gesetzt; keine Zentrierung hier. */
 .pin-crosshair {
-  position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);
+  position:absolute; left:0; top:0; width:54px; height:54px; margin-left:-27px; margin-top:-27px;
   z-index:455; pointer-events:none; filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));
-  animation: pinPulse 1.6s ease-in-out infinite;
+  transition:opacity .12s;
+  will-change:transform;
 }
-@keyframes pinPulse {
-  0%,100% { transform:translate(-50%, -50%) scale(1); }
-  50% { transform:translate(-50%, -50%) scale(1.08); }
-}
-.pin-bar {
-  position:absolute; left:50%; bottom:calc(18px + var(--safe-bottom)); transform:translateX(-50%);
-  z-index:460; background:var(--bg-1); border:1px solid var(--terra); border-radius:12px;
-  box-shadow:0 8px 24px rgba(0,0,0,.4); padding:10px 14px;
-  display:flex; flex-direction:column; gap:8px; align-items:center;
-  min-width:min(360px, calc(100% - 28px));
-}
-.pin-bar-text { font-size:13px; color:var(--paper); text-align:center; }
-.pin-bar-actions { display:flex; gap:8px; }
-.pin-btn {
-  padding:8px 14px; border-radius:8px; font-weight:600; font-size:13px; border:1px solid var(--rule);
-  background:var(--bg-2); color:var(--paper); cursor:pointer; transition:all .15s;
-}
-.pin-btn:hover { transform:translateY(-1px); }
-.pin-btn.ok { background:var(--terra); color:#141210; border-color:var(--terra); }
-.pin-btn.ok:hover { background:var(--terra-soft); border-color:var(--terra-soft); }
-.pin-btn.cancel { background:var(--bg-3); }
-
+.pin-crosshair.fade { opacity:0; }
+/* Karten-Cursor in Pin-Modus: Crosshair für Desktop, auf Touch folgt der SVG-Cursor dem Finger. */
+.map-wrap.pin-active #map, .map-wrap.pin-active .leaflet-container { cursor:crosshair; }
 /* Map status banner */
 .map-banner {
   position:absolute; left:14px; top:14px; z-index:450; max-width:calc(100% - 28px);
@@ -852,13 +848,29 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
     padding-bottom:var(--safe-bottom);
   }
   .side.half { height:var(--sheet-half); }
-  .side.full { height:var(--sheet-full); }
+  .side.full { height:var(--sheet-full); border-radius:0; padding-top:var(--safe-top); }
+  .side.full .tab-content { padding-bottom:calc(40px + var(--safe-bottom)); }
+  .side .sheet-snaps {
+    display:flex; justify-content:center; align-items:center; gap:6px;
+    padding:6px 0 0; user-select:none;
+  }
+  .side .snap-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:42px; height:22px; border-radius:11px;
+    background:rgba(243,234,217,.05); color:var(--ink-soft);
+    border:1px solid var(--rule); transition:all .18s ease;
+    padding:0;
+  }
+  .side .snap-btn:hover { background:rgba(243,234,217,.1); color:var(--ink); }
+  .side .snap-btn[aria-pressed="true"] {
+    background:var(--terra); color:#fff; border-color:var(--terra);
+    box-shadow:0 1px 4px rgba(194,95,61,.35);
+  }
+  .side .snap-btn svg { display:block; }
   .side .sheet-handle {
     width:44px; height:5px; background:var(--rule-strong); border-radius:3px;
-    margin:8px auto 4px; cursor:grab; touch-action:none;
+    margin:6px auto 4px; cursor:grab; touch-action:none;
   }
-  .side .tabs { padding:0 6px; }
-  .tab { padding:12px 8px; font-size:10.5px; letter-spacing:0.1em; }
   .map-wrap { flex:1; height:calc(100% - var(--sheet-peek)); }
   .fab-cluster { bottom:calc(var(--sheet-peek) + 12px + var(--safe-bottom)); transition:bottom .3s cubic-bezier(.2,.9,.3,1); }
   .side.half ~ * .fab-cluster, body.sheet-half .fab-cluster { bottom:calc(var(--sheet-half) + 12px + var(--safe-bottom)); }
@@ -883,9 +895,12 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
   .trip-meta { grid-template-columns:1fr; }
 }
 
-/* Desktop sheet-handle hidden */
-.sheet-handle { display:none; }
-@media (max-width: 900px) { .sheet-handle { display:block; } }
+/* Desktop sheet-handle / snaps hidden */
+.sheet-handle, .sheet-snaps { display:none; }
+@media (max-width: 900px) {
+  .sheet-handle { display:block; }
+  .sheet-snaps { display:flex; }
+}
 
 /* Print */
 @media print { body { background:white; color:black; } }
@@ -908,9 +923,9 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
       <span class="kbd">⌘K</span>
     </button>
     <div class="header-actions">
-      <button class="ors-pill" id="orsPill" title="OpenRouteService Tages-Quota" aria-label="ORS-Quota">
-        <span class="dot" aria-hidden="true"></span>
-        <span id="orsPillTxt">ORS 0 / 2000</span>
+      <!-- Burger: öffnet Sections-Menü (immer erreichbar, verdeckt die Karte nicht) -->
+      <button class="btn-burger" id="btnBurger" aria-haspopup="menu" aria-expanded="false" aria-controls="navPanel" aria-label="Menü öffnen" title="Alle Bereiche">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       </button>
       <button class="header-btn" id="btnLocate" aria-label="Meine Position">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
@@ -939,13 +954,6 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
           <path d="M27 4v10M27 40v10M4 27h10M40 27h10" stroke="#e3b23c" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>
-      <div id="pinBar" class="pin-bar" hidden role="dialog" aria-label="Pin setzen">
-        <div class="pin-bar-text" id="pinBarText">Karte verschieben · dann bestätigen</div>
-        <div class="pin-bar-actions">
-          <button type="button" class="pin-btn cancel" id="pinCancel">Abbrechen</button>
-          <button type="button" class="pin-btn ok" id="pinConfirm">Hier setzen</button>
-        </div>
-      </div>
 
       <div class="fab-cluster">
         <button class="fab" id="fabLocate" title="Mein Standort" aria-label="Standort">
@@ -960,37 +968,20 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
 
     <!-- ============ SIDE / SHEET ============ -->
     <aside class="side" id="side">
-      <div class="sheet-handle" id="sheetHandle"></div>
-      <div class="tabs-wrap">
-        <!-- Mobile drop-bar: zeigt aktiven Reiter + öffnet Volltextmenü mit allen Punkten. -->
-        <button type="button" class="tabs-drop" id="tabsDropBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="tabsDropList">
-          <span class="tabs-drop-icon" aria-hidden="true">🧭</span>
-          <span class="tabs-drop-label" id="tabsDropLabel">Entdecken</span>
-          <span class="tabs-drop-caret" aria-hidden="true">▾</span>
+      <div class="sheet-snaps" id="sheetSnaps" role="group" aria-label="Panel-Größe">
+        <button type="button" class="snap-btn" data-snap="peek" aria-pressed="true" aria-label="Nur Titel (unten)" title="Nur Titel">
+          <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h10"/></svg>
         </button>
-
-        <!-- Inline-Tabs (Tablet/Desktop). Auf Mobil per CSS ausgeblendet zugunsten der drop-bar. -->
-        <div class="tabs" role="tablist" aria-label="Ansicht wechseln">
-          <button class="tab active" data-tab="discover" data-icon="🧭" role="tab" id="tab-discover" aria-controls="panel-discover" aria-selected="true"><span class="t-ic" aria-hidden="true">🧭</span><span class="t-lb">Entdecken</span></button>
-          <button class="tab" data-tab="route"    data-icon="🧭" role="tab" id="tab-route"    aria-controls="panel-route"    aria-selected="false"><span class="t-ic" aria-hidden="true">🗺</span><span class="t-lb">Route</span></button>
-          <button class="tab" data-tab="plan"     data-icon="📅" role="tab" id="tab-plan"     aria-controls="panel-plan"     aria-selected="false"><span class="t-ic" aria-hidden="true">📅</span><span class="t-lb">Tage</span></button>
-          <button class="tab" data-tab="outdoor"  data-icon="🥾" role="tab" id="tab-outdoor"  aria-controls="panel-outdoor"  aria-selected="false"><span class="t-ic" aria-hidden="true">🥾</span><span class="t-lb">Outdoor</span></button>
-          <button class="tab" data-tab="phrase"   data-icon="💬" role="tab" id="tab-phrase"   aria-controls="panel-phrase"   aria-selected="false"><span class="t-ic" aria-hidden="true">💬</span><span class="t-lb">Sprache</span></button>
-          <button class="tab" data-tab="saved"    data-icon="★"  role="tab" id="tab-saved"    aria-controls="panel-saved"    aria-selected="false"><span class="t-ic" aria-hidden="true">★</span><span class="t-lb">Gesichert</span></button>
-          <button class="tab" data-tab="info"     data-icon="ℹ"  role="tab" id="tab-info"     aria-controls="panel-info"     aria-selected="false"><span class="t-ic" aria-hidden="true">ℹ</span><span class="t-lb">Info</span></button>
-        </div>
-
-        <!-- Dropdown-Liste (wird per JS auf-/zugeklappt; selbe Tabs) -->
-        <ul class="tabs-dropdown" id="tabsDropList" role="listbox" aria-label="Ansicht wählen" hidden>
-          <li><button type="button" class="td-item" data-tab="discover"><span class="td-ic">🧭</span><span>Entdecken</span></button></li>
-          <li><button type="button" class="td-item" data-tab="route"><span class="td-ic">🗺</span><span>Route</span></button></li>
-          <li><button type="button" class="td-item" data-tab="plan"><span class="td-ic">📅</span><span>Tage</span></button></li>
-          <li><button type="button" class="td-item" data-tab="outdoor"><span class="td-ic">🥾</span><span>Outdoor</span></button></li>
-          <li><button type="button" class="td-item" data-tab="phrase"><span class="td-ic">💬</span><span>Sprache</span></button></li>
-          <li><button type="button" class="td-item" data-tab="saved"><span class="td-ic">★</span><span>Gesichert</span></button></li>
-          <li><button type="button" class="td-item" data-tab="info"><span class="td-ic">ℹ</span><span>Info</span></button></li>
-        </ul>
+        <button type="button" class="snap-btn" data-snap="half" aria-pressed="false" aria-label="Halb geöffnet" title="Halb">
+          <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h10"/></svg>
+        </button>
+        <button type="button" class="snap-btn" data-snap="full" aria-pressed="false" aria-label="Vollbild" title="Vollbild">
+          <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 2h10"/></svg>
+        </button>
       </div>
+      <div class="sheet-handle" id="sheetHandle"></div>
+      <!-- Keine Inline-Tabs mehr: Navigation läuft komplett über den Burger oben im Header.
+           Das hält die Karte frei und die Bereichs-Liste ist auf Mobil & Desktop identisch. -->
 
       <div class="tab-content">
         <!-- ========== DISCOVER / FILTERS ========== -->
@@ -1273,6 +1264,48 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
   </div>
 </div>
 
+<!-- Sections-Menü (Burger) · immer erreichbar, deckt die Karte nicht dauerhaft zu -->
+<div class="nav-backdrop" id="navBackdrop" hidden></div>
+<nav class="nav-panel" id="navPanel" role="menu" aria-labelledby="btnBurger" hidden>
+  <header class="nph">
+    <span class="nph-title">Bereiche</span>
+    <button type="button" class="nph-close" id="navClose" aria-label="Menü schließen">✕</button>
+  </header>
+  <ul class="nav-list" id="navList">
+    <li><button type="button" class="nav-item" role="menuitem" data-tab="discover">
+      <span class="ni-ic">🧭</span>
+      <span class="ni-body"><span class="ni-lb">Entdecken</span><span class="ni-sub">Karte, Kategorien, POIs filtern</span></span>
+    </button></li>
+    <li><button type="button" class="nav-item" role="menuitem" data-tab="route">
+      <span class="ni-ic">🗺</span>
+      <span class="ni-body"><span class="ni-lb">Route</span><span class="ni-sub">Start → Ziel, Profile, Höhenprofil</span></span>
+    </button></li>
+    <li><button type="button" class="nav-item" role="menuitem" data-tab="plan">
+      <span class="ni-ic">📅</span>
+      <span class="ni-body"><span class="ni-lb">Tage</span><span class="ni-sub">Multi-Day-Planung &amp; Reihenfolge</span></span>
+    </button></li>
+    <li><button type="button" class="nav-item" role="menuitem" data-tab="outdoor">
+      <span class="ni-ic">🥾</span>
+      <span class="ni-body"><span class="ni-lb">Outdoor</span><span class="ni-sub">Wander- &amp; Radtouren, Trails</span></span>
+    </button></li>
+    <li><button type="button" class="nav-item" role="menuitem" data-tab="phrase">
+      <span class="ni-ic">💬</span>
+      <span class="ni-body"><span class="ni-lb">Sprache</span><span class="ni-sub">Slowenisch-Sprachführer, TTS</span></span>
+    </button></li>
+    <li><button type="button" class="nav-item" role="menuitem" data-tab="saved">
+      <span class="ni-ic">★</span>
+      <span class="ni-body"><span class="ni-lb">Gesichert</span><span class="ni-sub">Favoriten &amp; gespeicherte Trips</span></span>
+    </button></li>
+    <li><button type="button" class="nav-item" role="menuitem" data-tab="info">
+      <span class="ni-ic">ℹ</span>
+      <span class="ni-body"><span class="ni-lb">Info</span><span class="ni-sub">Über den Planer &amp; Attribution</span></span>
+    </button></li>
+  </ul>
+  <div class="nav-foot">
+    <span>Tipp: Das <strong>+</strong> rechts unten setzt Stopps per Fadenkreuz direkt auf der Karte.</span>
+  </div>
+</nav>
+
 <!-- Global Top-Strip (offline / install-hint / skipped-mode) -->
 <div class="top-strip" id="topStrip" role="status" aria-live="polite">
   <span class="ts-text" id="topStripText"></span>
@@ -1360,7 +1393,7 @@ const STATE = {
   routeCache: new Map(),   // key: "profile|lat1,lng1|lat2,lng2" -> {geom, distKm, durationSec, source}
   stationCache: new Map(), // key: "lat,lng@r" -> { bus:[], bike:[], ts }
   _routeFetchInFlight: new Set(), // dedupe concurrent fetches
-  pinMode: false, // Crosshair-Modus aktiv?
+  pinMode: false, // Crosshair-Modus aktiv? Tap auf Karte = Stopp am aktiven Tag.
   phrase: { cat:'all', mode:'list', query:'' },
   overpassEndpoint: 'https://overpass-api.de/api/interpreter',
   searchFocusIdx: -1,
@@ -2251,7 +2284,8 @@ async function routeORS(profile, coords) {
       instructions: true,
       instructions_format:'text',
       units:'km',
-      language:'de'
+      language:'de',
+      extra_info: ['surface','waytype','steepness']
     })
   });
   if (!r.ok) {
@@ -2277,8 +2311,48 @@ async function routeORS(profile, coords) {
     ascent: seg.ascent || 0,
     descent: seg.descent || 0,
     steps: (seg.steps || []).map(s => ({ text:s.instruction, dist:s.distance, dur:s.duration })),
+    extras: props.extras || null,
     source:'ors'
   };
+}
+
+// Parst ORS extras in eine kompakte Weg-Klassifikation.
+// surface-Codes (ORS): 1/3/4/14 = fest (Asphalt/Beton/Pflaster), 5 = Kopfstein (fest),
+// 2/7/8..18 = unbefestigt (Dirt/Gravel/Grass/Sand/...).
+// waytype-Codes: 4=Path, 5=Track, 7=Footway, 8=Steps, 9=Ferry.
+function classifyRouteExtras(raw) {
+  if (!raw || !raw.extras) return null;
+  const out = { pavedM:0, unpavedM:0, cobbleM:0, stepsM:0, pathM:0, trackM:0, footwayM:0, ferryM:0, totalM:0 };
+  const sSum = raw.extras.surface && raw.extras.surface.summary;
+  if (Array.isArray(sSum)) {
+    for (const s of sSum) {
+      const d = s.distance || 0;
+      out.totalM += d;
+      if ([1,3,4,14].includes(s.value)) out.pavedM += d;
+      else if (s.value === 5) { out.cobbleM += d; out.pavedM += d; }
+      else if ([2,6,7,8,9,10,11,12,13,15,16,17,18].includes(s.value)) out.unpavedM += d;
+    }
+  }
+  const wSum = raw.extras.waytype && raw.extras.waytype.summary;
+  if (Array.isArray(wSum)) {
+    for (const w of wSum) {
+      const d = w.distance || 0;
+      if (w.value === 4) out.pathM += d;
+      else if (w.value === 5) out.trackM += d;
+      else if (w.value === 7) out.footwayM += d;
+      else if (w.value === 8) out.stepsM += d;
+      else if (w.value === 9) out.ferryM += d;
+    }
+  }
+  const st = raw.extras.steepness && raw.extras.steepness.summary;
+  if (Array.isArray(st)) {
+    let steep = 0;
+    for (const s of st) { if (Math.abs(s.value) >= 3) steep += (s.distance || 0); }
+    out.steepM = steep;
+  }
+  out.unpavedShare = out.totalM > 0 ? out.unpavedM / out.totalM : 0;
+  out.pathShare    = out.totalM > 0 ? (out.pathM + out.trackM) / out.totalM : 0;
+  return out;
 }
 
 async function routeOSRM(profile, coords) {
@@ -2300,37 +2374,100 @@ async function routeOSRM(profile, coords) {
   };
 }
 
-async function route(profile, coords) {
-  if (coords.length < 2) throw new Error('need 2 points');
-  const prof = ROUTING_PROFILES.find(p => p.id === profile) || ROUTING_PROFILES[0];
-  try {
-    if (STATE.settings.orsKey) return await routeORS(profile, coords);
-  } catch (e) {
-    // HTTP-Status differenziert melden (A7)
-    if (e && (e.status === 401 || e.status === 403)) {
-      toast('ORS-Key ungültig – bitte in Einstellungen prüfen', 'danger');
-      window.__lastOrsError = { kind: 'auth', status: e.status };
-      STATE.settings.orsValid = false;
-      saveSettings();
-      showPlanOrsBanner('danger', 'ORS-Schlüssel wurde abgelehnt. Route läuft auf OSRM (ohne Höhen).');
-    } else if (e && e.status === 429) {
-      toast('ORS-Tageslimit erreicht – OSRM-Fallback aktiv', 'warn');
-      STATE.orsUsedToday = 2000;
-      saveSettings();
-      renderOrsQuotaUI();
-      window.__lastOrsError = { kind: 'limit', status: 429 };
-      showPlanOrsBanner('warn', 'ORS-Tageslimit aufgebraucht. Bis Mitternacht läuft alles über OSRM.');
-    } else if (e && e.status >= 500) {
-      toast('ORS gerade nicht erreichbar – OSRM-Fallback', 'warn');
-      window.__lastOrsError = { kind: 'server', status: e.status };
-      showPlanOrsBanner('warn', 'ORS-Server gerade nicht erreichbar – OSRM-Fallback aktiv.');
-    } else {
-      console.warn('ORS failed, fallback to OSRM:', e && e.message);
-      toast('ORS nicht verfügbar – OSRM-Fallback (keine Höhen)', 'warn');
-      window.__lastOrsError = { kind: 'unknown', message: e && e.message };
-    }
+// Zentralisiertes ORS-Error-Handling (Status → Banner/Toast/Quota).
+function handleOrsError(e) {
+  if (e && (e.status === 401 || e.status === 403)) {
+    toast('ORS-Key ungültig – bitte in Einstellungen prüfen', 'danger');
+    window.__lastOrsError = { kind: 'auth', status: e.status };
+    STATE.settings.orsValid = false;
+    saveSettings();
+    showPlanOrsBanner('danger', 'ORS-Schlüssel wurde abgelehnt. Route läuft auf OSRM (ohne Höhen).');
+  } else if (e && e.status === 429) {
+    toast('ORS-Tageslimit erreicht – OSRM-Fallback aktiv', 'warn');
+    STATE.orsUsedToday = 2000;
+    saveSettings();
+    renderOrsQuotaUI();
+    window.__lastOrsError = { kind: 'limit', status: 429 };
+    showPlanOrsBanner('warn', 'ORS-Tageslimit aufgebraucht. Bis Mitternacht läuft alles über OSRM.');
+  } else if (e && e.status >= 500) {
+    toast('ORS gerade nicht erreichbar – OSRM-Fallback', 'warn');
+    window.__lastOrsError = { kind: 'server', status: e.status };
+    showPlanOrsBanner('warn', 'ORS-Server gerade nicht erreichbar – OSRM-Fallback aktiv.');
+  } else if (e) {
+    console.warn('ORS failed, fallback to OSRM:', e.message);
+    window.__lastOrsError = { kind: 'unknown', message: e.message };
+  }
+}
+
+// Einmaliger Versuch mit einem Profil: ORS zuerst, dann OSRM. Wirft, wenn beide fehlschlagen.
+async function routeAttempt(profile, coords) {
+  if (STATE.settings.orsKey) {
+    try { return await routeORS(profile, coords); }
+    catch (e) { handleOrsError(e); }
   }
   return routeOSRM(profile, coords);
+}
+
+// Haupt-Routing mit Umweg-Retry und Notfall-Luftlinie.
+//
+// Ablauf:
+//   1) Primärversuch mit dem gewünschten Profil.
+//   2) Wenn der Umweg-Faktor (distKm / Luftlinie) > DETOUR_THRESHOLD und
+//      ein alternatives Profil bekannt ist (foot-walking→foot-hiking,
+//      cycling-regular→cycling-road), zweiter Versuch. Gewinnt das Profil
+//      mit der kürzeren tatsächlichen Distanz (plus 10% Hysterese gegen
+//      ping-pong zwischen Profilen).
+//   3) Totaler Fehlschlag → Luftlinie mit isFallback=true, damit die UI
+//      als gestrichelte rote Warnlinie rendert und dem User nicht stumm
+//      ein falsches Ergebnis anzeigt.
+async function route(profile, coords) {
+  if (coords.length < 2) throw new Error('need 2 points');
+  const airline = haversine(coords[0], coords[coords.length-1]);
+  const DETOUR_THRESHOLD = 1.8;
+
+  const FALLBACK_PROFILE = {
+    'foot-walking':   'foot-hiking',
+    'cycling-regular':'cycling-road',
+    'cycling-electric':'cycling-road',
+  };
+
+  let primary = null;
+  try { primary = await routeAttempt(profile, coords); }
+  catch (e) { console.warn('routeAttempt primary failed', profile, e && e.message); }
+
+  const altProfile = FALLBACK_PROFILE[profile];
+  if (primary && altProfile && airline > 0.05 && (primary.distKm / airline) > DETOUR_THRESHOLD) {
+    try {
+      const alt = await routeAttempt(altProfile, coords);
+      // Nur tauschen, wenn Alternative klar kürzer ist (10% Hysterese).
+      if (alt && alt.distKm > 0 && alt.distKm < primary.distKm * 0.9) {
+        alt._usedProfile = altProfile;
+        alt._detourRatio = alt.distKm / airline;
+        primary = alt;
+      } else if (primary) {
+        primary._detourRatio = primary.distKm / airline;
+      }
+    } catch (e) { console.warn('routeAttempt alt failed', altProfile, e && e.message); }
+  } else if (primary) {
+    primary._detourRatio = airline > 0 ? primary.distKm / airline : 1;
+    primary._usedProfile = profile;
+  }
+
+  if (primary) return primary;
+
+  // Totalausfall: sichtbare Luftlinie als Notfall-Ergebnis
+  console.warn('route(): total failure, returning airline fallback', profile);
+  return {
+    distKm: airline,
+    durationSec: airline * 720,  // ~5 km/h Fuß-Default
+    geom: [coords[0], coords[coords.length-1]],
+    elev: [], ascent: 0, descent: 0, steps: [],
+    extras: null,
+    source: 'fallback',
+    isFallback: true,
+    _usedProfile: profile,
+    _detourRatio: 1,
+  };
 }
 
 // ORS Matrix for TSP optimization
@@ -2461,6 +2598,269 @@ function modeOptions(a, b, opts={}) {
   return options;
 }
 
+// ---- H. TRANSIT-GRAPH (OSM-Relationen + LPP-Live-Abfahrten) -------------
+// Leichter Ersatz für einen GTFS-Download: OSM hat für jede Bus-/Tram-/
+// Bahn-Linie eine `route=*`-Relation mit geordneter Haltestellen-Folge.
+// Einmal pro App-Leben geholt, in IndexedDB gecacht (TTL 21 Tage).
+// Payload: ~80–200 KB für Ljubljana und Umland — ein Bruchteil von GTFS.
+// Für Echtzeit-Abfahrten rufen wir bei Bedarf die LPP-Live-API auf (on-demand,
+// nicht beim Boot). Offline-graceful: älterer Cache wird weiter benutzt.
+
+const TRANSIT_CACHE_KEY = 'transit:lj:v1';
+const TRANSIT_TTL_MS = 21 * 24 * 3600 * 1000;
+const TRANSIT_BBOX = [45.80, 14.20, 46.35, 14.95]; // Ljubljana-Region
+let _transitGraph = null;
+let _transitGraphLoading = null;
+
+// Hält, was der Overpass-Parse liefert: Linien + Stopp-Map.
+// stops: { id → {lat,lng,name,ref} }
+// lines: [{ ref, name, route, from, to, op, stops:[id,...] }]
+async function getTransitGraph(opts = {}) {
+  if (_transitGraph) return _transitGraph;
+  if (_transitGraphLoading) return _transitGraphLoading;
+  _transitGraphLoading = (async () => {
+    const cached = await dbGet(STORES.poiCache, TRANSIT_CACHE_KEY).catch(() => null);
+    const fresh = cached && (Date.now() - cached.ts) < TRANSIT_TTL_MS;
+    if (fresh && !opts.force) {
+      _transitGraph = cached.value;
+      return _transitGraph;
+    }
+    try {
+      const g = await fetchTransitGraph();
+      dbPut(STORES.poiCache, { key: TRANSIT_CACHE_KEY, ts: Date.now(), value: g }).catch(() => {});
+      _transitGraph = g;
+      return g;
+    } catch (e) {
+      console.warn('getTransitGraph: overpass failed, using stale/none', e && e.message);
+      if (cached) { _transitGraph = cached.value; return cached.value; }
+      return null;
+    }
+  })();
+  try { return await _transitGraphLoading; }
+  finally { _transitGraphLoading = null; }
+}
+
+async function fetchTransitGraph() {
+  // Bbox-Overpass statt Flächen-Filter: schneller, deterministisch.
+  // `>>` resolviert rekursiv Nodes/Ways, `out body qt` liefert Tags.
+  const [s, w, n, e] = TRANSIT_BBOX;
+  const q = `[out:json][timeout:90];
+(
+  relation["route"~"^(bus|tram|train|light_rail|trolleybus)$"]["ref"](${s},${w},${n},${e});
+);
+out body;
+>>;
+out body qt;`;
+  const endpoints = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter'
+  ];
+  let lastErr = null;
+  for (const ep of endpoints) {
+    try {
+      const r = await fetch(ep, { method: 'POST', body: 'data=' + encodeURIComponent(q) });
+      if (!r.ok) throw new Error('overpass ' + r.status);
+      const j = await r.json();
+      return parseTransitOverpass(j);
+    } catch (err) { lastErr = err; }
+  }
+  throw lastErr || new Error('overpass unreachable');
+}
+
+function parseTransitOverpass(j) {
+  const nodes = new Map();
+  const rels = [];
+  for (const el of j.elements || []) {
+    if (el.type === 'node') nodes.set(el.id, { lat: el.lat, lng: el.lon, tags: el.tags || {} });
+    else if (el.type === 'relation') rels.push(el);
+  }
+  const stops = {};
+  const lines = [];
+  for (const rel of rels) {
+    const tags = rel.tags || {};
+    const stopIds = [];
+    let lastId = null;
+    for (const m of rel.members || []) {
+      if (m.type !== 'node') continue;
+      // Rollen: stop, stop_entry_only, stop_exit_only, platform, platform_entry_only, platform_exit_only
+      if (!/^(stop|platform)/.test(m.role || '')) continue;
+      const n = nodes.get(m.ref);
+      if (!n) continue;
+      const sid = 'n' + m.ref;
+      if (!stops[sid]) {
+        stops[sid] = {
+          lat: n.lat, lng: n.lng,
+          name: (n.tags.name || n.tags['name:sl'] || '').trim(),
+          ref:  (n.tags.ref || n.tags['ref:lpp'] || '').trim(),
+        };
+      }
+      // Dublette stop/platform für gleiche Station kollabieren.
+      if (sid !== lastId) { stopIds.push(sid); lastId = sid; }
+    }
+    if (stopIds.length < 2) continue;
+    lines.push({
+      ref:   (tags.ref || '?').trim(),
+      name:  (tags.name || '').trim(),
+      from:  (tags.from || '').trim(),
+      to:    (tags.to || '').trim(),
+      route: tags.route,
+      op:    (tags.operator || '').trim(),
+      stops: stopIds,
+    });
+  }
+  return { ts: Date.now(), lines, stops };
+}
+
+// Nächste Haltestellen im Graph (Luftlinie, sortiert).
+function nearestTransitStops(g, ll, radiusKm, limit = 8) {
+  if (!g) return [];
+  const out = [];
+  for (const id in g.stops) {
+    const s = g.stops[id];
+    const d = haversine(ll, [s.lat, s.lng]);
+    if (d <= radiusKm) out.push({ id, dKm: d, lat: s.lat, lng: s.lng, name: s.name, ref: s.ref });
+  }
+  out.sort((a, b) => a.dKm - b.dKm);
+  return out.slice(0, limit);
+}
+
+// Segment-Länge einer Linie zwischen zwei Stop-Indizes (Haversine über Stop-Folge).
+function transitSegmentKm(g, line, i0, i1) {
+  let km = 0;
+  for (let i = i0; i < i1; i++) {
+    const a = g.stops[line.stops[i]];
+    const b = g.stops[line.stops[i + 1]];
+    if (!a || !b) continue;
+    km += haversine([a.lat, a.lng], [b.lat, b.lng]);
+  }
+  return km;
+}
+
+// planTransit: findet die beste Linie (ggf. mit 1 Umstieg) von `from` → `to`.
+// modeFilter: ['bus'] | ['tram'] | ['train'] | null (alle)
+// Rückgabe: null oder { kind:'direct'|'transfer', legs:[{line, board, alight, numStops, km}], walkInKm, walkOutKm }
+function planTransit(from, to, opts = {}) {
+  const g = _transitGraph;
+  if (!g) return null;
+  const maxWalk = opts.maxWalk || 0.6;  // bis 600 m zur Haltestelle
+  const modeFilter = opts.modeFilter || null;
+  const nearA = nearestTransitStops(g, from, maxWalk, 8);
+  const nearB = nearestTransitStops(g, to,   maxWalk, 8);
+  if (!nearA.length || !nearB.length) return null;
+
+  const idsA = new Set(nearA.map(s => s.id));
+  const idsB = new Set(nearB.map(s => s.id));
+  const byId = (arr, id) => arr.find(s => s.id === id);
+
+  // --- Direktlinie: eine Linie enthält A- und B-Stopp in korrekter Reihenfolge.
+  let best = null;
+  for (const line of g.lines) {
+    if (modeFilter && !modeFilter.includes(line.route)) continue;
+    let firstA = -1;
+    for (let i = 0; i < line.stops.length; i++) {
+      const sid = line.stops[i];
+      if (firstA < 0 && idsA.has(sid)) firstA = i;
+      else if (firstA >= 0 && idsB.has(sid)) {
+        const board  = byId(nearA, line.stops[firstA]);
+        const alight = byId(nearB, sid);
+        const numStops = i - firstA;
+        const transitKm = transitSegmentKm(g, line, firstA, i);
+        const walkIn = board.dKm, walkOut = alight.dKm;
+        const score = walkIn * 3 + walkOut * 3 + numStops * 0.25 - transitKm * 0.1;
+        if (!best || score < best.score) {
+          best = {
+            kind: 'direct',
+            legs: [{ line, board, alight, numStops, km: transitKm, fromIdx: firstA, toIdx: i }],
+            walkInKm: walkIn, walkOutKm: walkOut, totalTransitKm: transitKm,
+            score,
+          };
+        }
+        break; // erste sinnvolle Ankunft pro Linie reicht
+      }
+    }
+  }
+  if (best) return best;
+
+  // --- 1-Umstieg-Suche: Hub-Stopp, der auf A-Linie und B-Linie liegt.
+  // Kandidaten-Hubs sammeln: alle Stopps, die auf einer Linie liegen, die auch A erreicht.
+  const reachableFromA = new Map(); // hubStopId → {line, boardIdx, alightIdx}
+  for (const line of g.lines) {
+    if (modeFilter && !modeFilter.includes(line.route)) continue;
+    let firstA = -1;
+    for (let i = 0; i < line.stops.length; i++) {
+      if (firstA < 0 && idsA.has(line.stops[i])) { firstA = i; continue; }
+      if (firstA >= 0) {
+        const hubId = line.stops[i];
+        const prev = reachableFromA.get(hubId);
+        const kmA = transitSegmentKm(g, line, firstA, i);
+        if (!prev || kmA < prev.km) reachableFromA.set(hubId, { line, fromIdx: firstA, toIdx: i, km: kmA });
+      }
+    }
+  }
+  if (!reachableFromA.size) return null;
+
+  for (const line2 of g.lines) {
+    if (modeFilter && !modeFilter.includes(line2.route)) continue;
+    let hubIdx = -1, hubId = null;
+    for (let i = 0; i < line2.stops.length; i++) {
+      if (reachableFromA.has(line2.stops[i])) { hubIdx = i; hubId = line2.stops[i]; }
+      else if (hubIdx >= 0 && idsB.has(line2.stops[i])) {
+        const legA = reachableFromA.get(hubId);
+        const board  = byId(nearA, legA.line.stops[legA.fromIdx]);
+        const hub    = g.stops[hubId];
+        const alight = byId(nearB, line2.stops[i]);
+        const legBkm = transitSegmentKm(g, line2, hubIdx, i);
+        const numA = legA.toIdx - legA.fromIdx;
+        const numB = i - hubIdx;
+        const walkIn = board.dKm, walkOut = alight.dKm;
+        const score = walkIn * 3 + walkOut * 3 + (numA + numB) * 0.25 + 8 /* Umstieg-Strafe */ - (legA.km + legBkm) * 0.1;
+        if (!best || score < best.score) {
+          best = {
+            kind: 'transfer',
+            legs: [
+              { line: legA.line, board, alight: { id: hubId, lat: hub.lat, lng: hub.lng, name: hub.name, ref: hub.ref, dKm: 0 },
+                numStops: numA, km: legA.km, fromIdx: legA.fromIdx, toIdx: legA.toIdx },
+              { line: line2, board: { id: hubId, lat: hub.lat, lng: hub.lng, name: hub.name, ref: hub.ref, dKm: 0 },
+                alight, numStops: numB, km: legBkm, fromIdx: hubIdx, toIdx: i },
+            ],
+            walkInKm: walkIn, walkOutKm: walkOut, totalTransitKm: legA.km + legBkm,
+            score,
+          };
+        }
+        break;
+      }
+    }
+  }
+  return best;
+}
+
+// LPP-Live: nächste Abfahrten an einer Station (benötigt `ref` der Station).
+// On-demand aufrufen, z.B. nach Klick im Leg-Popup. Cached 60 s.
+const _lppArrivalCache = new Map();
+async function fetchLppArrivals(stationRef) {
+  if (!stationRef) return null;
+  const key = 'lpp:' + stationRef;
+  const hit = _lppArrivalCache.get(key);
+  if (hit && (Date.now() - hit.ts) < 60_000) return hit.data;
+  try {
+    const url = `https://data.lpp.si/api/station/arrival?station-code=${encodeURIComponent(stationRef)}`;
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) throw new Error('lpp ' + r.status);
+    const j = await r.json();
+    const data = (j && j.data ? j.data : []).slice(0, 5).map(a => ({
+      route: a.route_name || a.route || '',
+      dest:  a.destination || '',
+      etaMin: a.eta_min ?? a.etaMin ?? null,
+      type:  a.type || '',
+    }));
+    _lppArrivalCache.set(key, { ts: Date.now(), data });
+    return data;
+  } catch (e) {
+    console.warn('fetchLppArrivals failed', e && e.message);
+    return null;
+  }
+}
+
 // ---- Multi-Modal-Leg-Chain ----------------------------------------------
 // Für Rad/Bus/Bahn ist die reale Reise kein direkter Strich: Fuß → Station →
 // Transport → Station → Fuß. Diese Funktion nutzt den Citywide-Cache
@@ -2502,6 +2902,59 @@ function buildLegChain(from, to, modeChoiceId) {
     legs.push(mkLeg(modeChoiceId, from, to, null));
     return { legs, notes };
   }
+
+  // --- Bus / Tram / Bahn: erst Transit-Graph (OSM-Linien) konsultieren.
+  // Der Graph wird lazy beim ersten Plan-Öffnen geladen; ist er noch nicht
+  // da oder liefert keinen Treffer, fällt die Heuristik auf den Citywide-
+  // Cache zurück (Nächste-Haltestelle, ohne Linien-Nummer).
+  const transitModes = { bus: ['bus','trolleybus'], tram: ['tram'], train: ['train','light_rail'] };
+  if (transitModes[modeChoiceId]) {
+    const plan = planTransit(from, to, { modeFilter: transitModes[modeChoiceId], maxWalk: 0.6 });
+    if (plan) {
+      // Fuß zur Einstiegshaltestelle
+      const firstBoard = plan.legs[0].board;
+      legs.push(mkLeg('foot', from, [firstBoard.lat, firstBoard.lng],
+        `→ ${firstBoard.name || 'Haltestelle'}`));
+      // Transport-Legs (1 Direkt oder 2 mit Umstieg)
+      plan.legs.forEach((tl, idx) => {
+        const a = [tl.board.lat, tl.board.lng];
+        const b = [tl.alight.lat, tl.alight.lng];
+        const lineTxt = tl.line.ref && tl.line.ref !== '?' ? `Linie ${tl.line.ref}` : (tl.line.name || modeChoiceId);
+        const tLeg = mkLeg(modeChoiceId, a, b,
+          `${lineTxt} · ${tl.numStops} Halte${tl.board.name ? ` · ${tl.board.name} → ${tl.alight.name || '…'}` : ''}`);
+        // Reiche Transit-Metadaten an das Leg an (für Popup & Live-Abfahrten)
+        tLeg.line = { ref: tl.line.ref, name: tl.line.name, route: tl.line.route, op: tl.line.op };
+        tLeg.boardStop = tl.board;
+        tLeg.alightStop = tl.alight;
+        tLeg.numStops = tl.numStops;
+        tLeg.transitKm = tl.km;
+        legs.push(tLeg);
+        // Umstiegsweg zu Fuß zwischen zwei Linien (meist sehr kurz, gleicher Knoten)
+        if (idx < plan.legs.length - 1) {
+          const next = plan.legs[idx + 1].board;
+          if (haversine([tl.alight.lat, tl.alight.lng], [next.lat, next.lng]) > 0.03) {
+            legs.push(mkLeg('foot', [tl.alight.lat, tl.alight.lng], [next.lat, next.lng],
+              `Umstieg → ${next.name || 'Haltestelle'}`));
+          }
+        }
+      });
+      // Fuß vom letzten Alight-Stop zum Ziel
+      const lastAlight = plan.legs[plan.legs.length - 1].alight;
+      legs.push(mkLeg('foot', [lastAlight.lat, lastAlight.lng], to,
+        `${lastAlight.name || 'Haltestelle'} → Ziel`));
+      if (plan.kind === 'transfer') notes.push('Mit einem Umstieg');
+      return {
+        legs, notes,
+        stations: { a: firstBoard, b: lastAlight },
+        transitLine: plan.legs[0].line,
+        transitPlan: plan,
+      };
+    }
+    // Fallback auf alte Heuristik (Citywide-Cache: Nächste Haltestelle).
+    notes.push(getTransitGraph ? 'Keine Linie im OSM-Graph gefunden – Heuristik (Nächste Haltestelle)' : 'Transit-Graph nicht geladen');
+    // hinter Fallthrough laufen lassen
+  }
+
   const cfg = transportMap[modeChoiceId];
   if (!cfg) { legs.push(mkLeg('foot', from, to, null)); return { legs, notes }; }
   const sA = nearestSparse(cfg.cat, from, cfg.radiusKm);
@@ -2532,7 +2985,19 @@ async function routeSegment(profile, a, b) {
   STATE._routeFetchInFlight.add(key);
   try {
     const r = await route(profile, [a, b]);
-    const lean = { geom: r.geom, distKm: r.distKm, durationSec: r.durationSec, source: r.source };
+    const surface = classifyRouteExtras(r);
+    const lean = {
+      geom: r.geom,
+      distKm: r.distKm,
+      durationSec: r.durationSec,
+      source: r.source,
+      isFallback: !!r.isFallback,
+      usedProfile: r._usedProfile || profile,
+      detourRatio: r._detourRatio || 1,
+      ascent: r.ascent || 0,
+      descent: r.descent || 0,
+      surfaceBreakdown: surface,
+    };
     STATE.routeCache.set(key, lean);
     return lean;
   } catch (e) {
@@ -3269,71 +3734,15 @@ function setStatus(msg) {
   if (el) el.innerHTML = msg;
 }
 function switchTab(name) {
-  let activeLabel = name, activeIcon = '';
-  document.querySelectorAll('.tab').forEach(t => {
-    const on = t.dataset.tab === name;
-    t.classList.toggle('active', on);
-    t.setAttribute('aria-selected', String(on));
-    t.setAttribute('tabindex', on ? '0' : '-1');
-    if (on) {
-      const lbl = t.querySelector('.t-lb');
-      if (lbl) activeLabel = lbl.textContent;
-      activeIcon = t.dataset.icon || '';
-    }
-  });
+  // Panel-Umschaltung: nur noch Panels sichtbar/unsichtbar, Navigation komplett im Burger.
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
-  // Dropdown-Items synchronisieren
-  document.querySelectorAll('.td-item').forEach(it => {
+  // Nav-Items synchronisieren (Burger-Panel)
+  document.querySelectorAll('#navPanel .nav-item').forEach(it => {
     it.setAttribute('aria-current', String(it.dataset.tab === name));
   });
-  const dropLbl = document.getElementById('tabsDropLabel');
-  if (dropLbl) dropLbl.textContent = activeLabel;
-  const dropIc = document.querySelector('.tabs-drop-icon');
-  if (dropIc && activeIcon) dropIc.textContent = activeIcon;
-  closeTabsDropdown();
   STATE.activeTab = name;
-  // Mobile: Sheet öffnen wenn nicht Discover
+  // Mobile: Sheet hochfahren, damit der Nutzer den Inhalt des neuen Bereichs sieht.
   if (window.innerWidth < 900) snapSheet('half');
-}
-
-function openTabsDropdown() {
-  const btn = document.getElementById('tabsDropBtn');
-  const list = document.getElementById('tabsDropList');
-  if (!btn || !list) return;
-  btn.setAttribute('aria-expanded', 'true');
-  list.hidden = false;
-  // Außerhalb-Klick/ESC schließt
-  setTimeout(() => {
-    document.addEventListener('click', _tabsDropOutside, { once:true });
-    document.addEventListener('keydown', _tabsDropKey, { once:true });
-  }, 0);
-}
-function closeTabsDropdown() {
-  const btn = document.getElementById('tabsDropBtn');
-  const list = document.getElementById('tabsDropList');
-  if (!btn || !list) return;
-  btn.setAttribute('aria-expanded', 'false');
-  list.hidden = true;
-}
-function _tabsDropOutside(e) {
-  const wrap = e.target.closest('.tabs-wrap');
-  if (!wrap) closeTabsDropdown();
-  else {
-    // Wenn noch offen, erneut binden
-    const btn = document.getElementById('tabsDropBtn');
-    if (btn && btn.getAttribute('aria-expanded') === 'true') {
-      document.addEventListener('click', _tabsDropOutside, { once:true });
-    }
-  }
-}
-function _tabsDropKey(e) {
-  if (e.key === 'Escape') { closeTabsDropdown(); document.getElementById('tabsDropBtn')?.focus(); }
-  else {
-    const btn = document.getElementById('tabsDropBtn');
-    if (btn && btn.getAttribute('aria-expanded') === 'true') {
-      document.addEventListener('keydown', _tabsDropKey, { once:true });
-    }
-  }
 }
 
 // ============ K. FILTER CHIPS ============
@@ -3537,17 +3946,10 @@ function armOrsMidnightReset() {
 }
 
 function renderOrsQuotaUI() {
-  const pill = document.getElementById('orsPill');
-  const txt  = document.getElementById('orsPillTxt');
+  // Header-Pill existiert nicht mehr – Quota lebt nur noch im Settings-Panel.
   const qBadge = document.getElementById('setOrsQuota');
-  if (!pill || !txt) return;
   orsMaybeResetDay();
   const used = STATE.orsUsedToday || 0;
-  const hasKey = !!STATE.settings.orsKey;
-  pill.classList.toggle('show', hasKey);
-  pill.classList.toggle('warn',   hasKey && used >= 1800 && used < ORS_QUOTA_DAILY);
-  pill.classList.toggle('danger', hasKey && used >= ORS_QUOTA_DAILY);
-  txt.textContent = `ORS ${used} / ${ORS_QUOTA_DAILY}`;
   if (qBadge) {
     qBadge.textContent = `heute: ${used} / ${ORS_QUOTA_DAILY} ORS-Requests`;
     qBadge.classList.toggle('warn', used >= 1800 && used < ORS_QUOTA_DAILY);
@@ -3726,8 +4128,7 @@ function bindOrsUi() {
     if (STATE.settings.orsKey || STATE.settings.orsSkipped) closeOrsOnboarding();
   });
 
-  // Header-Quota-Pill öffnet Settings
-  document.getElementById('orsPill').addEventListener('click', openSettings);
+  // Header-Quota-Pill wurde entfernt; Quota ist weiterhin in den Einstellungen sichtbar.
 
   // Plan-Panel Banner
   document.getElementById('planOrsBannerFix').addEventListener('click', openSettings);
@@ -3905,54 +4306,136 @@ async function handleHikeAction(act, i) {
 // Ersetzt den unzuverlässigen Long-Press auf Mobile: User tippt den "+"-FAB,
 // sieht ein pulsierendes Fadenkreuz in der Kartenmitte und schiebt die Karte
 // darunter. Bestätigt wird oben über "Hier setzen". ESC bricht ab.
+// ====== BURGER / SECTIONS-MENÜ ======
+// Kompakt-Menü im Header mit Zugriff auf alle Tabs, immer erreichbar,
+// verdeckt die Karte nicht (Desktop: Dropdown, Mobile: kurzzeitiges Bottom-Sheet).
+function openNavPanel() {
+  const btn = document.getElementById('btnBurger');
+  const panel = document.getElementById('navPanel');
+  const back = document.getElementById('navBackdrop');
+  if (!btn || !panel) return;
+  // Aktiven Tab synchronisieren
+  const current = STATE.activeTab || 'discover';
+  panel.querySelectorAll('.nav-item').forEach(it => {
+    it.setAttribute('aria-current', String(it.dataset.tab === current));
+  });
+  btn.setAttribute('aria-expanded', 'true');
+  panel.hidden = false;
+  if (back) { back.hidden = false; requestAnimationFrame(() => back.classList.add('show')); }
+  requestAnimationFrame(() => panel.classList.add('show'));
+  // Fokus auf aktives Item für Tastatur-Nutzer
+  const active = panel.querySelector('[aria-current="true"]') || panel.querySelector('.nav-item');
+  if (active) setTimeout(() => active.focus({ preventScroll:true }), 30);
+  document.addEventListener('keydown', _navKey);
+}
+function closeNavPanel() {
+  const btn = document.getElementById('btnBurger');
+  const panel = document.getElementById('navPanel');
+  const back = document.getElementById('navBackdrop');
+  if (!btn || !panel) return;
+  btn.setAttribute('aria-expanded', 'false');
+  panel.classList.remove('show');
+  if (back) back.classList.remove('show');
+  // Nach Transition ausblenden
+  setTimeout(() => {
+    if (btn.getAttribute('aria-expanded') !== 'true') {
+      panel.hidden = true;
+      if (back) back.hidden = true;
+    }
+  }, 240);
+  document.removeEventListener('keydown', _navKey);
+}
+function _navKey(e) {
+  if (e.key === 'Escape') { closeNavPanel(); document.getElementById('btnBurger')?.focus(); }
+}
+
 function togglePinMode() {
   if (STATE.pinMode) exitPinMode(); else enterPinMode();
 }
 function enterPinMode() {
   STATE.pinMode = true;
-  document.getElementById('pinCrosshair').hidden = false;
-  const bar = document.getElementById('pinBar'); bar.hidden = false;
+  const ch = document.getElementById('pinCrosshair');
+  ch.hidden = false;
+  ch.classList.add('fade'); // erst sichtbar, wenn der Zeiger die Karte berührt
   document.getElementById('fabAdd').classList.add('active');
-  updatePinBarAddress();
-  map.on('moveend', updatePinBarAddress);
+  document.getElementById('mapWrap')?.classList.add('pin-active');
+  // Zeiger-/Tap-Handler
+  map.on('mousemove', onPinHover);
+  map.on('click', onPinClick);
+  // Touch ohne Hover: Crosshair folgt dem Finger beim Ziehen, und beim Tap
+  // landet der Punkt exakt dort, wo der Finger die Karte verlässt.
+  const mEl = document.getElementById('map');
+  if (mEl) {
+    mEl.addEventListener('touchstart', onPinTouch, { passive:true });
+    mEl.addEventListener('touchmove', onPinTouch, { passive:true });
+  }
   document.addEventListener('keydown', onPinEsc);
-  // Sheet auf peek, damit die Mitte wirklich sichtbar ist.
+  // Sheet auf peek, damit die Karte frei zugänglich bleibt.
   if (window.innerWidth < 900) snapSheet('peek');
 }
 function exitPinMode() {
   STATE.pinMode = false;
   document.getElementById('pinCrosshair').hidden = true;
-  document.getElementById('pinBar').hidden = true;
   document.getElementById('fabAdd').classList.remove('active');
-  map.off('moveend', updatePinBarAddress);
+  document.getElementById('mapWrap')?.classList.remove('pin-active');
+  map.off('mousemove', onPinHover);
+  map.off('click', onPinClick);
+  const mEl = document.getElementById('map');
+  if (mEl) {
+    mEl.removeEventListener('touchstart', onPinTouch);
+    mEl.removeEventListener('touchmove', onPinTouch);
+  }
   document.removeEventListener('keydown', onPinEsc);
 }
 function onPinEsc(e) { if (e.key === 'Escape') exitPinMode(); }
-let _pinAddrTimer = null;
-function updatePinBarAddress() {
+
+// Crosshair folgt dem Zeiger auf der Karte. Hover-Adresse wird live nachgeladen,
+// damit der User weiß, wo er gerade steht — bevor er tippt.
+let _pinHoverLL = null, _pinAddrTimer = null;
+function onPinHover(e) {
   if (!STATE.pinMode) return;
-  const c = map.getCenter();
-  const t = document.getElementById('pinBarText');
-  if (!t) return;
-  t.textContent = `Ziel: ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`;
-  // Adress-Lookup entprellt – sonst ballern wir Nominatim bei jedem Mini-Move zu.
+  const ch = document.getElementById('pinCrosshair');
+  if (!ch) return;
+  const p = e.containerPoint;
+  ch.classList.remove('fade');
+  ch.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
+  _pinHoverLL = e.latlng;
   if (_pinAddrTimer) clearTimeout(_pinAddrTimer);
-  _pinAddrTimer = setTimeout(async () => {
-    if (!STATE.pinMode) return;
-    const a = await reverseGeocode(c.lat, c.lng).catch(() => null);
-    if (!STATE.pinMode || !a) return;
-    // Nur überschreiben, wenn die Karte inzwischen nicht weiter verschoben wurde.
-    const nc = map.getCenter();
-    if (Math.abs(nc.lat - c.lat) > 0.0002 || Math.abs(nc.lng - c.lng) > 0.0002) return;
-    t.textContent = a.line1 || a.displayName || t.textContent;
-  }, 450);
 }
+function onPinTouch(ev) {
+  if (!STATE.pinMode) return;
+  const t = ev.touches && ev.touches[0]; if (!t) return;
+  const mEl = document.getElementById('map');
+  const rect = mEl.getBoundingClientRect();
+  const x = t.clientX - rect.left, y = t.clientY - rect.top;
+  const ch = document.getElementById('pinCrosshair');
+  if (!ch) return;
+  ch.classList.remove('fade');
+  ch.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  try { _pinHoverLL = map.containerPointToLatLng([x, y]); } catch {}
+}
+
+// Tap auf die Karte → Stopp setzen. Modus bleibt aktiv, damit der Nutzer
+// direkt den nächsten Stopp tippen kann. Nochmaliges Tippen auf den + Button
+// oder ESC beendet den Modus.
+async function onPinClick(e) {
+  if (!STATE.pinMode) return;
+  const ll = e.latlng;
+  await placePinAt(ll.lat, ll.lng);
+}
+
+async function placePinAt(lat, lng) {
+  const a = await reverseGeocode(lat, lng).catch(() => null);
+  const label = a?.line1 || a?.displayName || `Pin ${lat.toFixed(4)},${lng.toFixed(4)}`;
+  try { navigator.vibrate && navigator.vibrate(15); } catch {}
+  addWpFromPoi(lat, lng, label, 'Pin');
+  toast(`Stopp hinzugefügt: ${label} · tippe für den nächsten`, 'ok');
+}
+
+// Rückwärtskompatibel, falls noch irgendwo aufgerufen.
 async function confirmPinAtCenter() {
-  const c = map.getCenter();
-  const a = await reverseGeocode(c.lat, c.lng).catch(() => null);
-  const label = a?.line1 || a?.displayName || `Pin ${c.lat.toFixed(4)},${c.lng.toFixed(4)}`;
-  exitPinMode();
-  addWpFromPoi(c.lat, c.lng, label, 'Pin');
+  const ll = _pinHoverLL || map.getCenter();
+  await placePinAt(ll.lat, ll.lng);
 }
 
 // ============ P. MAP INTERACTION (long-press = add waypoint) ============
@@ -3963,6 +4446,8 @@ function initMapInteraction() {
 
   async function firePress() {
     if (!pressLL) return;
+    // Im Pin-Modus hat der Tap-zum-Setzen-Flow Vorrang; Long-Press ignorieren.
+    if (STATE.pinMode) { pressLL = null; pressTimer = null; return; }
     const ll = pressLL;
     pressLL = null; pressTimer = null;
     const a = await reverseGeocode(ll.lat, ll.lng).catch(() => null);
@@ -4028,11 +4513,21 @@ function initMapInteraction() {
 function snapSheet(state) {
   const side = document.getElementById('side');
   if (!side) return;
+  if (!['peek','half','full'].includes(state)) state = 'peek';
   side.classList.remove('half','full');
   if (state === 'half' || state === 'full') side.classList.add(state);
   document.body.classList.remove('sheet-half','sheet-full');
   if (state === 'half') document.body.classList.add('sheet-half');
   if (state === 'full') document.body.classList.add('sheet-full');
+  // Snap-Buttons synchronisieren
+  document.querySelectorAll('#sheetSnaps .snap-btn').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.snap === state));
+  });
+}
+function currentSheetState() {
+  const side = document.getElementById('side');
+  if (!side) return 'peek';
+  return side.classList.contains('full') ? 'full' : side.classList.contains('half') ? 'half' : 'peek';
 }
 function initSheetDrag() {
   const side = document.getElementById('side');
@@ -4068,7 +4563,7 @@ function initSheetDrag() {
     pointerId = null;
     if (!moved) {
       // Tap → zyklisch: peek → half → full → peek
-      const cur = side.classList.contains('full') ? 'full' : side.classList.contains('half') ? 'half' : 'peek';
+      const cur = currentSheetState();
       const next = cur === 'peek' ? 'half' : cur === 'half' ? 'full' : 'peek';
       snapSheet(next);
       return;
@@ -4076,8 +4571,9 @@ function initSheetDrag() {
     const vh = window.innerHeight;
     const h = side.getBoundingClientRect().height;
     side.style.height = '';
-    if (h < vh*0.25) snapSheet('peek');
-    else if (h < vh*0.65) snapSheet('half');
+    // Neue Schwellen passend zu 20/50/100 vh
+    if (h < vh*0.32) snapSheet('peek');
+    else if (h < vh*0.75) snapSheet('half');
     else snapSheet('full');
   }
 
@@ -4092,10 +4588,32 @@ function initSheetDrag() {
   handle.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      const cur = side.classList.contains('full') ? 'full' : side.classList.contains('half') ? 'half' : 'peek';
+      const cur = currentSheetState();
       const next = cur === 'peek' ? 'half' : cur === 'half' ? 'full' : 'peek';
       snapSheet(next);
     }
+  });
+
+  // Snap-Buttons (peek/half/full)
+  const snaps = document.getElementById('sheetSnaps');
+  if (snaps) {
+    snaps.addEventListener('click', (e) => {
+      const btn = e.target.closest('.snap-btn');
+      if (!btn) return;
+      snapSheet(btn.dataset.snap);
+    });
+  }
+
+  // ESC: aus Vollbild raus (full → half → peek)
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (window.innerWidth >= 900) return;
+    // Nicht abfangen, wenn ein Modal/Overlay offen ist
+    const blocking = document.querySelector('.nav-panel.show, #orsOnbPanel:not([hidden]), .modal.show, .search-overlay.show');
+    if (blocking) return;
+    const cur = currentSheetState();
+    if (cur === 'full') { snapSheet('half'); e.preventDefault(); }
+    else if (cur === 'half') { snapSheet('peek'); e.preventDefault(); }
   });
 }
 
@@ -5845,16 +6363,7 @@ async function boot() {
   renderPlanner();
   loadSaved();
 
-  // Tabs (inline + Drop-bar + Dropdown-Items binden alle dasselbe switchTab)
-  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
-  document.querySelectorAll('.td-item').forEach(it => it.addEventListener('click', () => switchTab(it.dataset.tab)));
-  const tabsDropBtn = document.getElementById('tabsDropBtn');
-  if (tabsDropBtn) tabsDropBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const open = tabsDropBtn.getAttribute('aria-expanded') === 'true';
-    if (open) closeTabsDropdown(); else openTabsDropdown();
-  });
-  // Initial aria-current + Drop-bar-Label synchron mit Startansicht.
+  // Initial Panel-Sync (Burger ist die einzige Navigation)
   switchTab(STATE.activeTab || 'discover');
 
   // Header + FABs
@@ -5863,11 +6372,30 @@ async function boot() {
   document.getElementById('btnSettings').addEventListener('click', openSettings);
   document.getElementById('fabLocate').addEventListener('click', locateMe);
   document.getElementById('fabPhrasebook').addEventListener('click', () => switchTab('phrase'));
-  // Stopp-Setzen: Pin-Modus (Crosshair). Auf Handy zuverlässig, weil der User
-  // die Karte sieht und vor dem Bestätigen präzise zielen kann.
+  // Stopp-Setzen: Pin-Modus (Crosshair) — tap auf Karte = Stopp. Modus bleibt
+  // aktiv, damit der Nutzer direkt den nächsten Punkt tippen kann.
   document.getElementById('fabAdd').addEventListener('click', togglePinMode);
-  document.getElementById('pinCancel').addEventListener('click', exitPinMode);
-  document.getElementById('pinConfirm').addEventListener('click', confirmPinAtCenter);
+
+  // Burger → Sections-Menü. Einzige Navigation, identisch auf Mobile & Desktop.
+  const burger = document.getElementById('btnBurger');
+  const navPanel = document.getElementById('navPanel');
+  const navBack = document.getElementById('navBackdrop');
+  const navClose = document.getElementById('navClose');
+  if (burger && navPanel) {
+    burger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = burger.getAttribute('aria-expanded') === 'true';
+      if (open) closeNavPanel(); else openNavPanel();
+    });
+    navPanel.querySelectorAll('.nav-item').forEach(it => {
+      it.addEventListener('click', () => {
+        switchTab(it.dataset.tab);
+        closeNavPanel();
+      });
+    });
+    if (navClose) navClose.addEventListener('click', closeNavPanel);
+    if (navBack)  navBack.addEventListener('click', closeNavPanel);
+  }
 
   // Search overlay
   document.getElementById('searchOverlayBg').addEventListener('click', closeSearchOverlay);
