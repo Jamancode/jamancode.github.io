@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ljubljana Reiseplaner">
+  <!-- Background: full square so it works as 'any' and 'maskable' purpose.
+       Maskable safe zone = central 80% (51.2px padding on each side). Logo stays inside. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a2018"/>
+      <stop offset="1" stop-color="#141210"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0c660"/>
+      <stop offset="1" stop-color="#c78f2b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- Subtle ring = map-compass hint -->
+  <circle cx="256" cy="256" r="176" fill="none" stroke="#3a2f24" stroke-width="6"/>
+  <circle cx="256" cy="256" r="176" fill="none" stroke="#e3b23c" stroke-width="2" stroke-dasharray="2 18" opacity="0.6"/>
+  <!-- Stylised dragon silhouette (Ljubljana emblem), simplified for small sizes -->
+  <path d="M150 330
+           q10 -46 52 -66
+           q14 -7 14 -22
+           q0 -14 14 -18
+           q22 -6 30 -26
+           q6 -14 22 -14
+           q18 0 22 18
+           q4 18 22 22
+           q24 6 28 28
+           q3 16 -10 24
+           l-14 9
+           q-8 5 -3 12
+           l12 18
+           q7 10 -5 14
+           l-30 10
+           q-10 3 -10 12
+           l0 16
+           q0 10 -10 10
+           l-40 0
+           q-12 0 -16 -10
+           l-12 -30
+           q-4 -10 -14 -8
+           l-30 6
+           q-14 3 -14 -5 z"
+        fill="url(#gold)"/>
+  <!-- Dragon wing -->
+  <path d="M300 210
+           q24 -30 56 -18
+           q14 6 10 20
+           q-4 14 -20 14
+           q-16 0 -46 -16 z"
+        fill="#e3b23c" opacity="0.9"/>
+  <!-- Eye -->
+  <circle cx="330" cy="250" r="4.5" fill="#141210"/>
+  <!-- Brand text "LJ" at bottom -->
+  <g font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="500">
+    <text x="256" y="418" text-anchor="middle" font-size="72" fill="#f5ecd8" letter-spacing="-2">LJ</text>
+  </g>
+</svg>

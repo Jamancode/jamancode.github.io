@@ -1,0 +1,33 @@
+{
+  "name": "Ljubljana Reiseplaner",
+  "short_name": "LJ Planner",
+  "description": "Offline-fähiger Mehrtages-Reiseplaner für Ljubljana mit Routing, POIs, Wanderungen und Slowenisch-Sprachführer.",
+  "start_url": "./",
+  "scope": "./",
+  "id": "/reiseplaner/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "orientation": "any",
+  "theme_color": "#141210",
+  "background_color": "#141210",
+  "lang": "de",
+  "dir": "ltr",
+  "categories": ["travel", "navigation", "lifestyle"],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ],
+  "shortcuts": [
+    { "name": "Plan öffnen",        "short_name": "Plan",     "url": "./?tab=plan",     "icons": [{"src":"icon.svg","sizes":"any"}] },
+    { "name": "Sprachführer",       "short_name": "Phrasen",  "url": "./?tab=phrase",   "icons": [{"src":"icon.svg","sizes":"any"}] },
+    { "name": "Aktueller Standort", "short_name": "Locate",   "url": "./?locate=1",     "icons": [{"src":"icon.svg","sizes":"any"}] }
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
+  "prefer_related_applications": false
+}

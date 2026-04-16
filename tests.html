@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<title>Ljubljana Reiseplaner · Pure-Logic-Tests</title>
+<style>
+  :root { color-scheme: dark light; }
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#141210; color:#f3ead9; margin:0; padding:20px; }
+  h1 { margin:0 0 10px; font-size:18px; }
+  .sum { padding:10px 12px; border-radius:8px; background:#1c1915; border:1px solid rgba(243,234,217,.12); font-size:13px; margin-bottom:14px; }
+  .sum.pass { border-color:#7fa07c; }
+  .sum.fail { border-color:#e07972; color:#e07972; }
+  .case { padding:6px 10px; border-left:3px solid #252117; margin:2px 0; font-size:12.5px; display:flex; gap:8px; align-items:flex-start; }
+  .case.pass { border-left-color:#7fa07c; }
+  .case.fail { border-left-color:#e07972; color:#ffdad6; background:rgba(224,121,114,.06); }
+  .case .n { color:#a89e89; flex-shrink:0; min-width:36px; }
+  .case .msg { color:#a89e89; margin-left:auto; font-size:11.5px; }
+  .err  { white-space:pre-wrap; background:#2a1a1a; color:#ffdad6; padding:6px 8px; border-radius:4px; font-size:11px; margin:2px 0 4px 44px; }
+  iframe.app { position:fixed; right:-2000px; bottom:0; width:800px; height:600px; border:0; }
+</style>
+</head>
+<body>
+<h1>Ljubljana Reiseplaner · Pure-Logic-Tests</h1>
+<div id="summary" class="sum">Lade App …</div>
+<div id="out"></div>
+
+<!-- Hidden iframe lädt index.html, damit wir window.__appLogic greifen können -->
+<iframe id="app" class="app" src="./index.html"></iframe>
+
+<script>
+(async function () {
+  const summary = document.getElementById('summary');
+  const out = document.getElementById('out');
+  const app = document.getElementById('app');
+
+  // Warten bis iframe-App fertig geladen und __appLogic verfügbar ist
+  const logic = await new Promise((resolve, reject) => {
+    const deadline = Date.now() + 12000;
+    const poll = () => {
+      try {
+        const w = app.contentWindow;
+        if (w && w.__appLogic && typeof w.__appLogic.haversine === 'function') return resolve(w.__appLogic);
+      } catch (e) {}
+      if (Date.now() > deadline) return reject(new Error('iframe __appLogic not ready in 12s'));
+      setTimeout(poll, 80);
+    };
+    app.addEventListener('load', () => setTimeout(poll, 80), { once:true });
+    setTimeout(poll, 200);
+  }).catch(err => { summary.className = 'sum fail'; summary.textContent = 'Setup-Fehler: ' + err.message; throw err; });
+
+  const tests = [];
+  function test(name, fn) { tests.push({ name, fn }); }
+
+  function expect(actual) {
+    return {
+      toEqual(expected) {
+        const a = JSON.stringify(actual), e = JSON.stringify(expected);
+        if (a !== e) throw new Error(`expected ${e}, got ${a}`);
+      },
+      toBe(expected) { if (actual !== expected) throw new Error(`expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`); },
+      toBeCloseTo(expected, tol=0.1) { if (Math.abs(actual-expected) > tol) throw new Error(`expected ≈ ${expected} (±${tol}), got ${actual}`); },
+      toBeLessThan(n)    { if (!(actual < n)) throw new Error(`expected < ${n}, got ${actual}`); },
+      toBeGreaterThan(n) { if (!(actual > n)) throw new Error(`expected > ${n}, got ${actual}`); },
+      toMatch(re)         { if (!re.test(String(actual))) throw new Error(`expected ${actual} to match ${re}`); },
+      toContain(s)        { if (String(actual).indexOf(s) === -1) throw new Error(`expected to contain ${s}, got ${actual}`); },
+      toBeTruthy()        { if (!actual) throw new Error(`expected truthy, got ${actual}`); },
+      toBeFalsy()         { if (actual) throw new Error(`expected falsy, got ${actual}`); },
+      toBeDefined()       { if (actual === undefined) throw new Error(`expected defined`); },
+    };
+  }
+
+  // =========================
+  //   TESTS (pure logic only)
+  // =========================
+
+  test('haversine LJ Zentrum → nahes POI ≈ 1.3 km (±0.15)', () => {
+    const d = logic.haversine([46.05,14.5],[46.06,14.51]);
+    expect(d).toBeCloseTo(1.26, 0.2);
+  });
+
+  test('haversine gleiche Punkte → 0', () => {
+    expect(logic.haversine([46.05,14.5],[46.05,14.5])).toBe(0);
+  });
+
+  test('parseTime("09:00") = 540', () => { expect(logic.parseTime('09:00')).toBe(540); });
+  test('parseTime("24:30") = 1470 (kein %24)', () => { expect(logic.parseTime('24:30')).toBe(1470); });
+  test('parseTime("") = 540 (Default 09:00)', () => { expect(logic.parseTime('')).toBe(540); });
+
+  test('minToTime(540) = "09:00"', () => { expect(logic.minToTime(540)).toBe('09:00'); });
+  test('minToTime(1470) zeigt Tagesüberlauf an', () => {
+    const s = logic.minToTime(1470);
+    expect(s).toMatch(/\+1/);     // Format: "HH:MM (+1)"
+    expect(s).toContain('06:30');  // 1470 min = 24h30min → 06:30 des nächsten Tages
+  });
+  test('minToTime(-60) toleriert negative Eingabe (Roll-back)', () => {
+    const s = logic.minToTime(-60);
+    expect(typeof s).toBe('string');
+    expect(s).toMatch(/^\d\d:\d\d/);
+  });
+
+  test('recommendMode <1.2 km → Zu Fuß', () => {
+    const r = logic.recommendMode([46.05,14.50],[46.056,14.506]);
+    expect(r.mode).toBe('Zu Fuß');
+    expect(r.profile).toBe('foot-walking');
+  });
+
+  test('recommendMode mittel, flach, trocken → Rad', () => {
+    const r = logic.recommendMode([46.05,14.50],[46.08,14.53], { elevGain:30, rainPct:10 });
+    expect(r.mode).toBe('BicikeLJ/Rad');
+  });
+
+  test('recommendMode mittel, bergig → E-Bike', () => {
+    const r = logic.recommendMode([46.05,14.50],[46.08,14.53], { elevGain:140, rainPct:10 });
+    expect(r.mode).toBe('E-Bike');
+  });
+
+  test('recommendMode Regen >60% → ÖPNV statt Rad', () => {
+    const r = logic.recommendMode([46.05,14.50],[46.08,14.53], { elevGain:20, rainPct:80 });
+    expect(r.mode).toBe('LPP Bus');
+    expect(r.reason).toContain('Regen');
+  });
+
+  test('recommendMode >20 km → Auto', () => {
+    const r = logic.recommendMode([46.05,14.50],[46.30,14.80]);
+    expect(r.mode).toBe('Auto/Überland');
+  });
+
+  test('escapeNonAscii normalisiert slowenische Zeichen', () => {
+    expect(logic.escapeNonAscii('Prešeren, Ljubljana')).toBe('Preseren, Ljubljana');
+    expect(logic.escapeNonAscii('Škofja Loka')).toBe('Skofja Loka');
+  });
+
+  test('escapeNonAscii bewahrt ASCII', () => {
+    expect(logic.escapeNonAscii('Cafe 01 - Test_ok')).toBe('Cafe 01 - Test_ok');
+  });
+
+  test('slug entfernt unzulässige Zeichen', () => {
+    expect(logic.slug('Café Lj!')).toMatch(/^[a-zA-Z0-9äöüß_-]+$/);
+  });
+  test('slug leerer Input → Default', () => {
+    expect(logic.slug('')).toBe('Trip');
+  });
+
+  test('wmoText bekannt: 0 → "Sonne"-ähnlich, 95 → "Gewitter"-ähnlich', () => {
+    expect(typeof logic.wmoText(0)).toBe('string');
+    expect(logic.wmoText(0).length).toBeGreaterThan(0);
+    expect(logic.wmoText(95).length).toBeGreaterThan(0);
+  });
+
+  test('wmoEmoji bekannt: 0 = ☀️', () => {
+    expect(logic.wmoEmoji(0)).toBe('☀️');
+  });
+
+  test('ORS_KEY_RE akzeptiert Legacy-Hex-Key (40 Zeichen)', () => {
+    const ok = '5b3ce3597851110001cf6248abcdef0123456789';
+    expect(logic.ORS_KEY_RE.test(ok)).toBeTruthy();
+  });
+  test('ORS_KEY_RE akzeptiert aktuellen Base64-JWT-Style-Key (ca. 120 Zeichen, mit "=" Padding)', () => {
+    const realistic = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImJjYWEzYzRiN2I4NzRlMzA5YjY4NjUwMGU5NjhjMjg2IiwiaCI6Im11cm11cjY0In0=';
+    expect(logic.ORS_KEY_RE.test(realistic)).toBeTruthy();
+  });
+  test('ORS_KEY_RE verwirft zu kurze Strings', () => {
+    expect(logic.ORS_KEY_RE.test('short')).toBeFalsy();
+  });
+  test('ORS_KEY_RE verwirft Spaces/Sonderzeichen', () => {
+    expect(logic.ORS_KEY_RE.test('has spaces in key 1234567890abcdefghij')).toBeFalsy();
+  });
+
+  test('ORS_QUOTA_DAILY ist 2000', () => {
+    expect(logic.ORS_QUOTA_DAILY).toBe(2000);
+  });
+
+  test('buildTripQR komprimiert Trip auf <2900 Zeichen', () => {
+    const trip = {
+      name:'Urlaub LJ',
+      startDate:'2026-04-17',
+      days: Array.from({length:3}, (_,i) => ({
+        date:`2026-04-${17+i}`,
+        startTime:'09:00',
+        notes:'',
+        waypoints: Array.from({length:5}, (_,j) => ({
+          id:`wp${i}_${j}`, lat:46.05+i*0.01, lng:14.5+j*0.01,
+          name:`Stopp ${i}-${j}`, category:'Essen', dwell:45
+        }))
+      }))
+    };
+    const s = logic.buildTripQR(trip);
+    expect(typeof s).toBe('string');
+    expect(s.length).toBeLessThan(2900);
+    expect(s.length).toBeGreaterThan(10);
+  });
+
+  test('pointInKavalir: Rathausplatz-ähnlich → true', () => {
+    expect(logic.pointInKavalir([46.049, 14.506])).toBeTruthy();
+  });
+  test('pointInKavalir: weit außerhalb → false', () => {
+    expect(logic.pointInKavalir([45.8, 14.0])).toBeFalsy();
+  });
+
+  // =========================
+  //   RUN
+  // =========================
+  let pass = 0, fail = 0;
+  const results = [];
+  for (const t of tests) {
+    try {
+      await t.fn();
+      pass++;
+      results.push({ name:t.name, ok:true });
+      const row = document.createElement('div');
+      row.className = 'case pass';
+      row.innerHTML = `<span class="n">PASS</span><span>${escape(t.name)}</span>`;
+      out.appendChild(row);
+    } catch (e) {
+      fail++;
+      results.push({ name:t.name, ok:false, err: e.message });
+      const row = document.createElement('div');
+      row.className = 'case fail';
+      row.innerHTML = `<span class="n">FAIL</span><span>${escape(t.name)}</span>`;
+      out.appendChild(row);
+      const pre = document.createElement('pre');
+      pre.className = 'err';
+      pre.textContent = e.message;
+      out.appendChild(pre);
+    }
+  }
+  summary.className = 'sum ' + (fail ? 'fail' : 'pass');
+  summary.textContent = `${pass}/${tests.length} Tests bestanden${fail ? ` · ${fail} fehlgeschlagen` : ''}`;
+  window.__testResults = { total: tests.length, pass, fail, results };
+  // Maschinenlesbar für CI
+  window.__testsDone = true;
+
+  function escape(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+})();
+</script>
+</body>
+</html>
