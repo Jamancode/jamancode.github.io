@@ -63,7 +63,7 @@
   --ff-mono: "JetBrains Mono",ui-monospace,monospace;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
-  --sheet-peek: 10vh;
+  --sheet-peek: 20vh;
   --sheet-half: 50vh;
   --sheet-full: 100vh;
   --fab-size: 48px;
@@ -146,14 +146,20 @@ header::after { content:""; position:absolute; left:0; right:0; bottom:-1px; hei
 }
 
 .nav-backdrop {
-  position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:995;
+  position:fixed; inset:0; background:rgba(10,8,6,.66); z-index:995;
   opacity:0; pointer-events:none; transition:opacity .2s;
+  backdrop-filter:blur(4px) saturate(.85); -webkit-backdrop-filter:blur(4px) saturate(.85);
 }
 .nav-backdrop.show { opacity:1; pointer-events:auto; }
 .nav-backdrop[hidden] { display:none; }
 
 .nav-panel {
-  position:fixed; z-index:996; background:var(--bg-1); border:1px solid var(--terra);
+  position:fixed; z-index:996;
+  /* Solider, leicht milchiger Hintergrund: ohne das waren Texte über der
+     hellen Karte kaum lesbar. Blur + sattere Grundfarbe fixen den Kontrast. */
+  background:rgba(20,18,16,.96);
+  backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
+  border:1px solid var(--terra);
   box-shadow:0 20px 48px rgba(0,0,0,.6); display:flex; flex-direction:column;
   transform-origin:top right;
 }
@@ -850,6 +856,19 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
   .side.half { height:var(--sheet-half); }
   .side.full { height:var(--sheet-full); border-radius:0; padding-top:var(--safe-top); }
   .side.full .tab-content { padding-bottom:calc(40px + var(--safe-bottom)); }
+  /* Prominenter Exit-Button im Vollbild-Modus: nur dort sichtbar, löst den
+     Vollbild-Trap auf, der den User ohne Ausweg gelassen hat. */
+  .side .sheet-exit {
+    display:none; position:sticky; top:calc(6px + var(--safe-top));
+    align-self:flex-end; margin:6px 10px 0 auto; z-index:10;
+    padding:7px 12px 7px 10px; border-radius:999px;
+    background:var(--terra); color:#141210; font-weight:700; font-size:13px;
+    border:1px solid var(--terra-soft); box-shadow:0 4px 12px rgba(0,0,0,.35);
+    align-items:center; gap:6px;
+  }
+  .side.full .sheet-exit { display:inline-flex; }
+  .side .sheet-exit svg { display:block; }
+  .side .sheet-exit:hover { background:var(--terra-soft); }
   .side .sheet-snaps {
     display:flex; justify-content:center; align-items:center; gap:6px;
     padding:6px 0 0; user-select:none;
@@ -968,6 +987,10 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
 
     <!-- ============ SIDE / SHEET ============ -->
     <aside class="side" id="side">
+      <button type="button" class="sheet-exit" id="sheetExit" aria-label="Zurück zur Karte">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Zurück zur Karte
+      </button>
       <div class="sheet-snaps" id="sheetSnaps" role="group" aria-label="Panel-Größe">
         <button type="button" class="snap-btn" data-snap="peek" aria-pressed="true" aria-label="Nur Titel (unten)" title="Nur Titel">
           <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h10"/></svg>
@@ -2182,15 +2205,13 @@ function buildPoiPopup(p, cat) {
   const street = [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' ');
   const cityL = [t['addr:postcode'], t['addr:city']].filter(Boolean).join(' ');
   const addrLine = street || cityL ? `<div class="paddr">${[street, cityL].filter(Boolean).join(', ')}</div>` : '';
-  const opening = t.opening_hours ? `<div class="paddr">🕐 ${escapeHtml(t.opening_hours)}</div>` : '';
-  const phone = t.phone ? `<div class="paddr">📞 ${escapeHtml(t.phone)}</div>` : '';
-  const web = t.website ? `<div class="paddr">🔗 <a href="${escapeAttr(t.website)}" target="_blank" rel="noopener">Website</a></div>` : '';
-  const wheel = t.wheelchair ? `<div class="paddr">♿ ${escapeHtml(t.wheelchair)}</div>` : '';
-  const cuisine = t.cuisine ? `<div class="paddr">🍴 ${escapeHtml(t.cuisine).replace(/;/g, ', ')}</div>` : '';
+
+  // Zusatz-Infos (Linien-Tags, Live-Räder, Öffnungszeiten, Kontakt) per
+  // zentralem Builder — nutzt Transit-Graph, BicikeLJ-Live und OH-Parser.
+  const extras = buildPoiExtrasHTML({ ...p, category: cat.id || cat.label });
 
   const id = `p${p.id}`;
   setTimeout(() => {
-    // Async reverse-geocode for missing address
     if (!street && !cityL) {
       reverseGeocode(p.lat, p.lng).then(a => {
         if (!a) return;
@@ -2198,12 +2219,16 @@ function buildPoiPopup(p, cat) {
         if (el) el.innerHTML = `<div class="paddr">📍 ${escapeHtml(a.line1)}${a.line2 ? ', '+escapeHtml(a.line2) : ''}</div>`;
       });
     }
+    // BicikeLJ-Live ggf. erst jetzt fertig → Popup nach 800 ms einmal refreshen
+    if (t.amenity === 'bicycle_rental' && !_bikeShareLive) {
+      getBikeShareLive().then(() => {
+        const host = document.getElementById(id);
+        const slot = host && host.querySelector('[data-poi-extras]');
+        if (slot) slot.innerHTML = buildPoiExtrasHTML({ ...p, category: cat.id || cat.label });
+      });
+    }
   }, 50);
 
-  // Action-Payload in JSON statt inline-String-Interpolation – sonst crashen Namen
-  // mit Anführungszeichen, Backslashes oder Zeilenumbrüchen die Buttons (OSM hat das
-  // tatsächlich, z. B. "Frankie's \"Bar\""). Die Delegation unten (poi-popup click) liest
-  // das Attribut und ruft die jeweilige Aktion mit sauberen Argumenten auf.
   const payload = escapeAttr(JSON.stringify({
     id: p.id, lat: p.lat, lng: p.lng, name: p.name, cat: cat.label
   }));
@@ -2212,7 +2237,7 @@ function buildPoiPopup(p, cat) {
     <h3>${escapeHtml(p.name)}</h3>
     ${addrLine}
     <div id="${id}_addr"></div>
-    ${opening}${phone}${web}${cuisine}${wheel}
+    <div data-poi-extras>${extras}</div>
     <div class="pcoords">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
     <div class="popup-actions">
       <button class="popup-btn" data-pact="add">+ Zum Tag</button>
@@ -2836,6 +2861,210 @@ function planTransit(from, to, opts = {}) {
 
 // LPP-Live: nächste Abfahrten an einer Station (benötigt `ref` der Station).
 // On-demand aufrufen, z.B. nach Klick im Leg-Popup. Cached 60 s.
+// BicikeLJ-Live: freie Räder und freie Plätze pro Station via CityBikes
+// (aggregiert GBFS/JCDecaux, Refresh alle 5 Min). 1 Request für alle Stationen
+// der Stadt, cached 5 Min. Ergebnis als Map `stationName(lower) → {free, empty, total}`.
+// Wir matchen pro POI über den Namen-Key — OSM-Tags `name=*` stimmen meistens überein.
+let _bikeShareLive = null, _bikeShareLiveTs = 0;
+async function getBikeShareLive() {
+  if (_bikeShareLive && (Date.now() - _bikeShareLiveTs) < 5 * 60_000) return _bikeShareLive;
+  try {
+    const r = await fetch('https://api.citybik.es/v2/networks/bicikelj');
+    if (!r.ok) throw new Error('citybikes ' + r.status);
+    const j = await r.json();
+    const out = new Map();
+    for (const s of (j.network && j.network.stations) || []) {
+      const key = (s.name || '').toLowerCase().trim();
+      out.set(key, {
+        free: s.free_bikes ?? null,
+        empty: s.empty_slots ?? null,
+        total: (s.free_bikes || 0) + (s.empty_slots || 0),
+        ebikes: (s.extra && s.extra.ebikes) ?? null,
+        lat: s.latitude, lng: s.longitude,
+        name: s.name || '',
+      });
+    }
+    _bikeShareLive = out; _bikeShareLiveTs = Date.now();
+    return out;
+  } catch (e) { console.warn('getBikeShareLive failed', e && e.message); return _bikeShareLive || null; }
+}
+
+// Linien, die an einer Haltestelle halten. Greift auf den bereits geladenen
+// Transit-Graph zurück — kein Netz-Call pro POI. O(n·m) ist für LJ trivial
+// (ca. 40 Linien × avg 30 Stopps). Rückgabe sortiert, Dubletten gemerged.
+function busLinesForStop(stopLat, stopLng, radiusM = 60) {
+  const g = _transitGraph;
+  if (!g) return [];
+  const radKm = radiusM / 1000;
+  const hits = new Map(); // ref → {ref, name, route, op}
+  for (const id in g.stops) {
+    const s = g.stops[id];
+    if (haversine([stopLat, stopLng], [s.lat, s.lng]) > radKm) continue;
+    for (const line of g.lines) {
+      if (line.stops.includes(id)) {
+        const key = line.route + ':' + line.ref;
+        if (!hits.has(key)) hits.set(key, { ref: line.ref, name: line.name, route: line.route, op: line.op });
+      }
+    }
+  }
+  return Array.from(hits.values()).sort((a, b) => {
+    // Numerische Linien zuerst, sortiert, dann Rest
+    const na = parseInt(a.ref, 10), nb = parseInt(b.ref, 10);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return (a.ref || '').localeCompare(b.ref || '');
+  });
+}
+
+// Opening-Hours-Parser (OSM `opening_hours` Tag).
+// Handhabt die häufigsten Formen: "24/7", "Mo-Fr 09:00-18:00",
+// "Mo-Fr 09:00-12:00,14:00-18:00", "Mo-Su 09:00-18:00", "Sa-Su off".
+// Für exotische Expressions (Public Holidays, Monatsbereiche, "sunset")
+// fällt der Parser sauber auf `null` zurück statt falsch zu antworten.
+// Rückgabe: { openNow:true|false|null, todayText:string, nextChangeMin:number|null }
+function parseOpeningHours(expr, now = new Date()) {
+  if (!expr || typeof expr !== 'string') return null;
+  const e = expr.trim();
+  if (/^24\s*\/\s*7$/i.test(e)) return { openNow: true, todayText: '24/7 geöffnet', nextChangeMin: null };
+  const DAY_IDX = { Mo:1, Tu:2, We:3, Th:4, Fr:5, Sa:6, Su:0 };
+  const nowDay = now.getDay();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const rules = e.split(';').map(s => s.trim()).filter(Boolean);
+  let todayRanges = null;
+  for (const rule of rules) {
+    // Form: "Mo-Fr 09:00-18:00,14:00-18:00" oder "Sa off"
+    const m = rule.match(/^(Mo|Tu|We|Th|Fr|Sa|Su)(?:-(Mo|Tu|We|Th|Fr|Sa|Su))?(?:,(Mo|Tu|We|Th|Fr|Sa|Su)(?:-(Mo|Tu|We|Th|Fr|Sa|Su))?)?\s+(.+)$/);
+    if (!m) continue;
+    const days = new Set();
+    const expandRange = (a, b) => {
+      const ia = DAY_IDX[a], ib = b ? DAY_IDX[b] : ia;
+      for (let i = ia; i !== ib; i = (i + 1) % 7) days.add(i);
+      days.add(ib);
+    };
+    expandRange(m[1], m[2]);
+    if (m[3]) expandRange(m[3], m[4]);
+    const times = m[5].trim();
+    if (!days.has(nowDay)) continue;
+    if (/^off$/i.test(times) || /^closed$/i.test(times)) { todayRanges = []; continue; }
+    const ranges = [];
+    for (const span of times.split(',').map(x => x.trim())) {
+      const tm = span.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+      if (!tm) return null;
+      const a = +tm[1] * 60 + +tm[2];
+      let b = +tm[3] * 60 + +tm[4];
+      if (b <= a) b += 24 * 60; // über Mitternacht
+      ranges.push([a, b]);
+    }
+    todayRanges = ranges;
+  }
+  if (!todayRanges) return { openNow: null, todayText: 'Öffnungszeiten komplex', nextChangeMin: null };
+  if (todayRanges.length === 0) return { openNow: false, todayText: 'Heute geschlossen', nextChangeMin: null };
+  let openNow = false, nextChange = null;
+  for (const [a, b] of todayRanges) {
+    if (nowMin >= a && nowMin < b) { openNow = true; nextChange = b - nowMin; break; }
+    if (nowMin < a && (nextChange == null || (a - nowMin) < nextChange)) nextChange = a - nowMin;
+  }
+  const todayText = todayRanges.map(([a, b]) =>
+    `${String(Math.floor(a/60)).padStart(2,'0')}:${String(a%60).padStart(2,'0')}–${String(Math.floor(b/60)%24).padStart(2,'0')}:${String(b%60).padStart(2,'0')}`
+  ).join(', ');
+  return { openNow, todayText, nextChangeMin: nextChange };
+}
+
+// Liefert aufbereitete Zusatz-Infos für einen POI basierend auf seinen OSM-Tags
+// und Live-Datenquellen. Rückgabe als kleines HTML-Snippet für den Map-Popup.
+// Fälle:
+//  - bus_stop/tram_stop: listet Linien aus Transit-Graph (+ LPP-Live-Button wenn ref)
+//  - bicycle_rental: Live-Verfügbarkeit aus CityBikes (freie Räder/Plätze, Dock-%)
+//  - restaurant/cafe/attraction: parst opening_hours → „jetzt geöffnet/bis 18:00"
+//  - phone/website/wheelchair: als Kontakt-Zeilen
+function buildPoiExtrasHTML(poi) {
+  const t = poi.tags || poi.t || {};
+  const lines = [];
+
+  // --- Haltestellen: welche Linie fährt hier?
+  const isStop = /bus_stop|tram_stop|halt|station/.test(t.highway || '') ||
+                 /bus_stop|tram_stop/.test(t.railway || '') ||
+                 /bus_stop|tram_stop|halt/.test(t.public_transport || '') ||
+                 /bus|tram|train/.test(t.amenity || '');
+  if (isStop) {
+    const lns = busLinesForStop(poi.lat, poi.lng, 80);
+    if (lns.length) {
+      const tags = lns.map(l => {
+        const color = l.route === 'tram' ? '#d66f4e' : l.route === 'train' ? '#5ea05e' : '#4e8dd6';
+        return `<span style="display:inline-block;min-width:24px;padding:1px 6px;margin:2px 3px 0 0;border-radius:4px;background:${color};color:#fff;font-weight:700;font-size:12px;text-align:center">${escapeHtml(l.ref)}</span>`;
+      }).join('');
+      lines.push(`<div class="psmall" style="margin-top:6px"><strong>Linien:</strong> ${tags}</div>`);
+    } else if (_transitGraph) {
+      lines.push(`<div class="psmall">Keine Linie in OSM zugeordnet</div>`);
+    }
+    const stationRef = t.ref || t['ref:lpp'];
+    if (stationRef) {
+      lines.push(`<button class="btn sm" style="margin-top:6px" onclick="showLppArrivals('${escapeHtml(stationRef)}', this)">Nächste Abfahrt</button>`);
+    }
+  }
+
+  // --- BicikeLJ-Stationen: Live-Verfügbarkeit
+  if (t.amenity === 'bicycle_rental' || t.rental === 'bicycle_rental' || poi.category === 'bike_rental') {
+    const live = _bikeShareLive;
+    const name = (poi.name || t.name || '').toLowerCase().trim();
+    const st = live && name ? live.get(name) : null;
+    if (st) {
+      const bikeTxt = st.free != null ? `${st.free}/${st.total} Räder frei` : '';
+      const dockTxt = st.empty != null ? `${st.empty} freie Plätze` : '';
+      const pct = st.total > 0 ? Math.round((st.free / st.total) * 100) : null;
+      const color = pct == null ? '#a89e89' : pct >= 50 ? '#7fa07c' : pct >= 15 ? '#d6a24e' : '#e07972';
+      lines.push(`<div class="psmall" style="margin-top:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span><strong>${escapeHtml(bikeTxt)}</strong>${dockTxt ? ' · ' + escapeHtml(dockTxt) : ''}${st.ebikes != null ? ' · ' + st.ebikes + ' E-Bikes' : ''}</div>`);
+    } else if (live) {
+      lines.push(`<div class="psmall">Live-Verfügbarkeit für diese Station nicht gefunden</div>`);
+    } else {
+      lines.push(`<div class="psmall">BicikeLJ-Live lädt …</div>`);
+    }
+    if (t.capacity) lines.push(`<div class="psmall">Kapazität: ${escapeHtml(t.capacity)} Docks</div>`);
+  }
+
+  // --- Öffnungszeiten (Cafe/Restaurant/Attraction/Shop)
+  if (t.opening_hours) {
+    const oh = parseOpeningHours(t.opening_hours);
+    if (oh) {
+      let badge;
+      if (oh.openNow === true) {
+        const closeIn = oh.nextChangeMin;
+        badge = `<span style="color:#7fa07c;font-weight:700">● Jetzt offen</span>${closeIn != null ? ` · schließt in ${closeIn < 60 ? closeIn + ' min' : Math.round(closeIn/60) + ' h'}` : ''}`;
+      } else if (oh.openNow === false) {
+        const openIn = oh.nextChangeMin;
+        badge = `<span style="color:#e07972;font-weight:700">● Geschlossen</span>${openIn != null ? ` · öffnet in ${openIn < 60 ? openIn + ' min' : Math.round(openIn/60) + ' h'}` : ''}`;
+      } else {
+        badge = `<span style="color:#a89e89">Öffnungszeiten prüfen</span>`;
+      }
+      lines.push(`<div class="psmall" style="margin-top:6px">${badge}</div>`);
+      if (oh.todayText && oh.todayText !== 'Heute geschlossen' && oh.todayText !== '24/7 geöffnet') {
+        lines.push(`<div class="psmall">Heute: ${escapeHtml(oh.todayText)}</div>`);
+      }
+    } else {
+      lines.push(`<div class="psmall">Öffnung: <code style="font-size:11px">${escapeHtml(t.opening_hours)}</code></div>`);
+    }
+  }
+
+  // --- Kontakt & Zugänglichkeit
+  if (t.phone || t['contact:phone']) {
+    const p = t.phone || t['contact:phone'];
+    lines.push(`<div class="psmall">📞 <a href="tel:${escapeHtml(p)}">${escapeHtml(p)}</a></div>`);
+  }
+  if (t.website || t['contact:website']) {
+    const w = t.website || t['contact:website'];
+    lines.push(`<div class="psmall">🌐 <a href="${escapeHtml(w)}" target="_blank" rel="noopener">Website</a></div>`);
+  }
+  if (t.wheelchair) {
+    const txt = { yes:'Barrierefrei', limited:'Eingeschränkt barrierefrei', no:'Nicht barrierefrei' }[t.wheelchair] || t.wheelchair;
+    lines.push(`<div class="psmall">♿ ${escapeHtml(txt)}</div>`);
+  }
+  if (t.cuisine && (t.amenity === 'restaurant' || t.amenity === 'cafe' || t.amenity === 'fast_food')) {
+    lines.push(`<div class="psmall">🍴 ${escapeHtml(t.cuisine.replace(/_/g, ' ').replace(/;/g, ', '))}</div>`);
+  }
+  if (t.fee === 'yes' && t.amenity === 'toilets') lines.push(`<div class="psmall">Eintritt/Gebühr</div>`);
+
+  return lines.join('');
+}
+
 const _lppArrivalCache = new Map();
 async function fetchLppArrivals(stationRef) {
   if (!stationRef) return null;
@@ -3504,6 +3733,104 @@ function clearRouteLayers() {
   if (routePolyline) { try { map.removeLayer(routePolyline); } catch {} routePolyline = null; }
 }
 
+// Mapping: Profile-ID aus wp.modeChoice (z.B. 'foot-walking') → chain-id ('foot').
+function modeChoiceToChainId(choice) {
+  if (!choice) return 'foot';
+  if (['foot','bike','ebike','bus','tram','train','car','taxi','kavalir'].includes(choice)) return choice;
+  return ({
+    'foot-walking':'foot', 'foot-hiking':'foot',
+    'cycling-regular':'bike', 'cycling-road':'bike', 'cycling-mountain':'bike',
+    'cycling-electric':'ebike',
+    'driving-car':'car', 'driving-hgv':'car',
+  })[choice] || 'foot';
+}
+function chainIdToProfile(id) {
+  return ({
+    foot:'foot-walking', bike:'cycling-regular', ebike:'cycling-electric',
+    bus:'driving-car', tram:'driving-car', train:'driving-car',
+    car:'driving-car', taxi:'driving-car', kavalir:'driving-car',
+  })[id] || 'foot-walking';
+}
+
+// Farb-/Stil-Paletten je Modus. Linien-Gewichte sind bewusst so gewählt, dass
+// Transit-Linien (Bus/Bahn) sich visuell klar von Fuß/Rad abheben.
+const LEG_STYLE = {
+  foot:    { color:'#e3b23c', weight:4,   emoji:'🚶' },
+  bike:    { color:'#4ea3b4', weight:4.5, emoji:'🚲' },
+  ebike:   { color:'#64c0c8', weight:4.5, emoji:'⚡🚲' },
+  bus:     { color:'#4e8dd6', weight:6,   emoji:'🚌' },
+  tram:    { color:'#d66f4e', weight:6,   emoji:'🚋' },
+  train:   { color:'#5ea05e', weight:6.5, emoji:'🚆' },
+  car:     { color:'#9a8c7a', weight:5,   emoji:'🚗' },
+  taxi:    { color:'#d6c14e', weight:5,   emoji:'🚕' },
+  kavalir: { color:'#c25f3d', weight:5,   emoji:'🚐' },
+};
+
+function formatKm(km) {
+  return km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km';
+}
+
+// Popup-HTML für ein gerendertes Leg. Zeigt Modus, Distanz, Dauer, Kosten,
+// ORS-Oberflächen-Breakdown (falls vorhanden) und — bei Transit-Legs —
+// Linien-Referenz samt Button für Live-Abfahrten der Einstiegsstation.
+function buildLegPopupHTML(leg, cached) {
+  const style = LEG_STYLE[leg.mode] || LEG_STYLE.foot;
+  const parts = [];
+  parts.push(`<div class="popup"><div class="ptype">${style.emoji} ${escapeHtml(leg.label || leg.mode)}</div>`);
+  parts.push(`<div>${formatKm(leg.km)} · ${leg.min} min${leg.cost ? ' · ' + leg.cost.toFixed(2) + ' €' : ''}</div>`);
+  if (leg.line) {
+    const ref = leg.line.ref && leg.line.ref !== '?' ? leg.line.ref : '';
+    if (ref) parts.push(`<div class="psmall"><strong>Linie ${escapeHtml(ref)}</strong>${leg.line.name ? ' · ' + escapeHtml(leg.line.name) : ''}</div>`);
+    if (leg.numStops) parts.push(`<div class="psmall">${leg.numStops} Halte</div>`);
+    if (leg.boardStop) {
+      const st = leg.boardStop;
+      if (st.name) parts.push(`<div class="psmall">Einstieg: ${escapeHtml(st.name)}</div>`);
+      if (st.ref) parts.push(`<button class="btn sm" style="margin-top:6px" onclick="showLppArrivals('${escapeHtml(st.ref)}', this)">Nächste Abfahrt</button>`);
+    }
+  }
+  if (cached) {
+    if (cached.isFallback) {
+      parts.push(`<div class="psmall" style="color:#e07972">⚠ Keine routbare Strecke – Luftlinie angezeigt</div>`);
+    } else {
+      if (cached.usedProfile && cached.usedProfile !== chainIdToProfile(leg.mode)) {
+        parts.push(`<div class="psmall">Profil-Fallback: ${escapeHtml(cached.usedProfile)}</div>`);
+      }
+      if (cached.detourRatio > 1.5) {
+        parts.push(`<div class="psmall" style="color:#d6a24e">Umwegfaktor ${cached.detourRatio.toFixed(1)}× – Netz hier dünn</div>`);
+      }
+      if (cached.surfaceBreakdown) {
+        const sb = cached.surfaceBreakdown;
+        if (sb.unpavedShare > 0.15 && leg.mode === 'foot') {
+          parts.push(`<div class="psmall">🥾 ${Math.round(sb.unpavedShare * 100)}% unbefestigt${sb.pathM > 0 ? ' · Waldpfad' : ''}${sb.trackM > 0 ? ' · Forstweg' : ''} – feste Schuhe</div>`);
+        } else if (sb.cobbleM > 50) {
+          parts.push(`<div class="psmall">Kopfsteinpflaster ${Math.round(sb.cobbleM)} m</div>`);
+        }
+        if (sb.stepsM > 10) parts.push(`<div class="psmall">↗ ${Math.round(sb.stepsM)} m Treppen</div>`);
+        if (sb.ferryM > 0)  parts.push(`<div class="psmall">⛴ Fähre ${Math.round(sb.ferryM)} m</div>`);
+      }
+      if ((cached.ascent || 0) >= 30) {
+        parts.push(`<div class="psmall">↑ ${Math.round(cached.ascent)} m Höhe`+(cached.descent ? ` · ↓ ${Math.round(cached.descent)} m` : '')+`</div>`);
+      }
+    }
+  }
+  parts.push(`</div>`);
+  return parts.join('');
+}
+
+// Live-Abfahrten nachladen und im Leg-Popup anzeigen.
+// Aufruf aus dem Popup-Button (globaler Scope, siehe unten).
+window.showLppArrivals = async function(ref, btn) {
+  btn.disabled = true; btn.textContent = 'lade …';
+  const data = await fetchLppArrivals(ref);
+  const host = btn.parentElement;
+  if (!data || !data.length) {
+    btn.outerHTML = `<div class="psmall">Keine Abfahrten gefunden (Station #${escapeHtml(ref)})</div>`;
+    return;
+  }
+  const rows = data.map(a => `<li>${escapeHtml(a.route || '?')}${a.dest ? ' · ' + escapeHtml(a.dest) : ''} · ${a.etaMin != null ? a.etaMin + ' min' : '—'}</li>`).join('');
+  btn.outerHTML = `<div class="psmall" style="margin-top:6px"><strong>Abfahrten Station #${escapeHtml(ref)}:</strong><ul style="margin:4px 0 0; padding-left:18px">${rows}</ul></div>`;
+};
+
 function redrawWaypoints() {
   wpMarkersLayer.clearLayers();
   clearRouteLayers();
@@ -3516,27 +3843,66 @@ function redrawWaypoints() {
   if (day.waypoints.length < 2) return;
 
   for (let i = 1; i < day.waypoints.length; i++) {
-    const a = [day.waypoints[i-1].lat, day.waypoints[i-1].lng];
-    const b = [day.waypoints[i].lat, day.waypoints[i].lng];
-    const profile = day.waypoints[i].modeChoice || day.waypoints[i].modeAuto || 'foot-walking';
-    const key = `${profile}|${a[0].toFixed(4)},${a[1].toFixed(4)}|${b[0].toFixed(4)},${b[1].toFixed(4)}`;
-    const cached = STATE.routeCache.get(key);
-    if (cached && cached.geom && cached.geom.length > 1) {
-      const line = L.polyline(cached.geom, {
-        color:'#e3b23c', weight:4, opacity:.9, lineCap:'round', lineJoin:'round'
+    const wA = day.waypoints[i-1], wB = day.waypoints[i];
+    const chainId = modeChoiceToChainId(wB.modeChoice || wB.modeAuto);
+    const chain = buildLegChain([wA.lat, wA.lng], [wB.lat, wB.lng], chainId);
+    for (const leg of chain.legs) drawLegOnMap(leg, day);
+  }
+}
+
+// Zeichnet ein einzelnes Leg: Fuß-Anteile asphaltiert durchgezogen, unbefestigt
+// gestrichelt; Transit-Legs mit dickerer farbiger Linie; Fallback-Luftlinien
+// rot gestrichelt als deutliche Warnung. Popup mit allen Meta-Infos wird
+// per bindPopup angeheftet.
+function drawLegOnMap(leg, day) {
+  const style = LEG_STYLE[leg.mode] || LEG_STYLE.foot;
+  const profile = chainIdToProfile(leg.mode);
+  const key = `${profile}|${leg.from[0].toFixed(4)},${leg.from[1].toFixed(4)}|${leg.to[0].toFixed(4)},${leg.to[1].toFixed(4)}`;
+  const cached = STATE.routeCache.get(key);
+
+  if (cached && cached.geom && cached.geom.length > 1) {
+    // Fallback-Luftlinie (ORS+OSRM beide fehlgeschlagen): rot gestrichelt, klar warnen.
+    if (cached.isFallback) {
+      const warn = L.polyline(cached.geom, {
+        color:'#e07972', weight:3, opacity:.75, dashArray:'3 8', lineCap:'round'
       }).addTo(map);
-      routeSegmentLayers.push(line);
-    } else {
-      // Placeholder: gestrichelte Luftlinie, wird ersetzt sobald echte Route da ist.
-      const ph = L.polyline([a, b], {
-        color:'#d97a48', weight:3, opacity:.55, dashArray:'2 8', lineCap:'round'
-      }).addTo(map);
-      routeSegmentLayers.push(ph);
-      // Hintergrund-Fetch, dann einmalig re-rendern sobald bereit (dedupliziert).
-      routeSegment(profile, a, b).then(r => {
-        if (r && r.geom && r.geom.length > 1 && currentDay() === day) redrawWaypoints();
-      });
+      warn.bindPopup(buildLegPopupHTML(leg, cached));
+      routeSegmentLayers.push(warn);
+      return;
     }
+    // Unpaved-Share → gestrichelt (Waldpfad/Feldweg)
+    const sb = cached.surfaceBreakdown;
+    const dash = (leg.mode === 'foot' && sb && sb.unpavedShare > 0.4) ? '8 6' : null;
+    const line = L.polyline(cached.geom, {
+      color: style.color, weight: style.weight, opacity: .9,
+      dashArray: dash, lineCap:'round', lineJoin:'round'
+    }).addTo(map);
+    line.bindPopup(buildLegPopupHTML(leg, cached));
+    routeSegmentLayers.push(line);
+    // Transit: Einstieg/Ausstieg-Marker als kleine Punkte
+    if (leg.boardStop && (leg.mode === 'bus' || leg.mode === 'tram' || leg.mode === 'train')) {
+      const dot = L.circleMarker([leg.boardStop.lat, leg.boardStop.lng], {
+        radius:5, color:style.color, weight:2, fillColor:'#fff', fillOpacity:1
+      }).addTo(map);
+      dot.bindTooltip(leg.boardStop.name || 'Haltestelle', { direction:'top' });
+      routeSegmentLayers.push(dot);
+    }
+    if (leg.alightStop && (leg.mode === 'bus' || leg.mode === 'tram' || leg.mode === 'train')) {
+      const dot = L.circleMarker([leg.alightStop.lat, leg.alightStop.lng], {
+        radius:5, color:style.color, weight:2, fillColor:'#fff', fillOpacity:1
+      }).addTo(map);
+      dot.bindTooltip(leg.alightStop.name || 'Haltestelle', { direction:'top' });
+      routeSegmentLayers.push(dot);
+    }
+  } else {
+    // Lade-Placeholder
+    const ph = L.polyline([leg.from, leg.to], {
+      color: style.color, weight: 3, opacity: .45, dashArray: '2 8', lineCap:'round'
+    }).addTo(map);
+    routeSegmentLayers.push(ph);
+    routeSegment(profile, leg.from, leg.to).then(r => {
+      if (r && r.geom && r.geom.length > 1 && currentDay() === day) redrawWaypoints();
+    });
   }
 }
 
@@ -4601,6 +4967,16 @@ function initSheetDrag() {
       const btn = e.target.closest('.snap-btn');
       if (!btn) return;
       snapSheet(btn.dataset.snap);
+    });
+  }
+
+  // Prominenter „Zurück zur Karte"-Button im Vollbild — löst den Trap auf.
+  const exitBtn = document.getElementById('sheetExit');
+  if (exitBtn) {
+    exitBtn.addEventListener('click', () => {
+      snapSheet('peek');
+      // Optional: Map ins Sichtfeld scrollen (falls Page gescrollt war)
+      try { document.getElementById('map')?.scrollIntoView({ block:'start' }); } catch {}
     });
   }
 
@@ -6362,6 +6738,20 @@ async function boot() {
   renderHikeCatalog();
   renderPlanner();
   loadSaved();
+
+  // Transit-Graph (OSM-Linien Ljubljana) lazy im Hintergrund laden.
+  // Beim ersten Start: Overpass-Fetch, danach IndexedDB-Cache (21 Tage TTL).
+  // Wenn fertig und ein Plan aktiv: einmal re-rendern, damit Linien-Nummern
+  // in den Leg-Popups auftauchen.
+  setTimeout(() => {
+    getTransitGraph().then(g => {
+      if (g && STATE.trip && currentDay() && currentDay().waypoints.length >= 2) {
+        try { redrawWaypoints(); renderPlanner(); } catch {}
+      }
+    }).catch(() => {});
+    // BicikeLJ-Live-Verfügbarkeit parallel vorwärmen
+    getBikeShareLive().catch(() => {});
+  }, 1200);
 
   // Initial Panel-Sync (Burger ist die einzige Navigation)
   switchTab(STATE.activeTab || 'discover');
