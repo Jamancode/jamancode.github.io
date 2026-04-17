@@ -1180,7 +1180,15 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
               <label for="ttsRateSlider" class="tts-label">Tempo <span id="ttsRateVal">0.95×</span></label>
               <input type="range" id="ttsRateSlider" min="0.5" max="1.4" step="0.05" />
             </div>
+            <div class="tts-row" id="sttMicRow" hidden>
+              <label for="sttMicSelect" class="tts-label">Mikrofon</label>
+              <select id="sttMicSelect" class="field sm">
+                <option value="">Systemstandard (Windows-Einstellung)</option>
+              </select>
+              <button class="btn ghost sm" id="sttMicTest" title="Aufnahme prüfen">🎤 Test</button>
+            </div>
             <div id="ttsVoiceHelp" class="tts-help"></div>
+            <div id="sttMicHelp" class="tts-help"></div>
           </div>
 
           <input type="search" class="field" id="phraseSearch" placeholder="Suchen (Deutsch oder Slowenisch) …" />
@@ -4163,6 +4171,14 @@ function switchTab(name) {
   STATE.activeTab = name;
   // Mobile: Sheet hochfahren, damit der Nutzer den Inhalt des neuen Bereichs sieht.
   if (window.innerWidth < 900) snapSheet('half');
+  // Sprache-Tab: Mikrofon einmalig sicher-primen. Die Tab-Aktivierung ist eine
+  // User-Geste → getUserMedia darf den Permission-Dialog zeigen. Nach Grant
+  // wird das Windows-/System-Default-Mic korrekt gesetzt, die Geräteliste
+  // bekommt echte Namen, und der Nutzer muss NICHTS weiter tun.
+  if (name === 'phrase' && typeof ensureMicReady === 'function' && !STT.permissionPrimed) {
+    // Kleine Verzögerung, damit der Tab erst sichtbar wird, bevor der Dialog kommt
+    setTimeout(() => { ensureMicReady().catch(()=>{}); }, 350);
+  }
 }
 
 // ============ K. FILTER CHIPS ============
@@ -5555,7 +5571,101 @@ const STT = {
   supported: 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window,
   Rec: window.SpeechRecognition || window.webkitSpeechRecognition || null,
   active: null, // currently running recognition
+  micDeviceId: '', // '' = System-Standard (Windows-Einstellung)
+  permissionPrimed: false,
 };
+
+// Öffnet kurz einen Audio-Track mit dem gewählten Gerät (oder Default) und schließt
+// ihn wieder. Chrome/Edge benutzen daraufhin genau dieses Gerät als „current audio
+// input" — die SpeechRecognition-API nimmt dann das gleiche.
+// Ohne diesen Trick greift der Browser auf sein internes Default zurück, das NICHT
+// immer mit dem Windows-Standardmikrofon übereinstimmt.
+async function primeMic({ keepAliveMs = 0 } = {}) {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error('getUserMedia nicht verfügbar');
+  }
+  const constraints = STT.micDeviceId
+    ? { audio: { deviceId: { exact: STT.micDeviceId }, echoCancellation: true, noiseSuppression: true } }
+    : { audio: { echoCancellation: true, noiseSuppression: true } };
+  const stream = await navigator.mediaDevices.getUserMedia(constraints);
+  STT.permissionPrimed = true;
+  if (keepAliveMs > 0) await new Promise(r => setTimeout(r, keepAliveMs));
+  stream.getTracks().forEach(t => t.stop());
+}
+
+// Checkt & holt einmalig die Mikrofon-Erlaubnis. Nach Erfolg ist:
+//   - der Windows-/System-Default als „current input" im Browser gesetzt,
+//   - die Geräteliste mit echten Namen befüllt,
+//   - STT.permissionPrimed = true.
+// Läuft idempotent; der Nutzer muss NICHTS klicken außer einmal „Erlauben".
+async function ensureMicReady({ silentIfPrompt = false } = {}) {
+  if (!STT.supported) return 'unsupported';
+  if (STT.permissionPrimed) return 'granted';
+
+  // Permissions API ist die zuverlässige Quelle für den aktuellen Stand.
+  let state = 'prompt';
+  try {
+    if (navigator.permissions?.query) {
+      const p = await navigator.permissions.query({ name: 'microphone' });
+      state = p.state; // 'granted' | 'prompt' | 'denied'
+      // Bei späteren Änderungen (User widerruft/erteilt) automatisch nachziehen
+      p.onchange = () => {
+        if (p.state === 'granted') {
+          primeMic().then(populateMicList).catch(()=>{});
+        }
+      };
+    }
+  } catch { /* Firefox kennt 'microphone' evtl. nicht → fällt auf 'prompt' zurück */ }
+
+  if (state === 'denied') {
+    const help = document.getElementById('sttMicHelp');
+    if (help) help.textContent = 'Mikrofon-Zugriff blockiert. Adressleiste → Schloss-Icon → Website-Einstellungen → Mikrofon „Zulassen".';
+    return 'denied';
+  }
+
+  // 'granted' → direkt primen (stumm). 'prompt' → primeMic löst den nativen
+  // Browser-Dialog aus. Das ist hier OK, weil der Aufruf aus einem User-Click
+  // (Tab öffnen / Mic-Button) stammt.
+  if (state === 'prompt' && silentIfPrompt) return 'prompt';
+  try {
+    await primeMic();
+    await populateMicList();
+    return 'granted';
+  } catch (e) {
+    const help = document.getElementById('sttMicHelp');
+    if (help) help.textContent = 'Mikrofon nicht verfügbar: ' + (e.message || 'Unbekannter Fehler');
+    return 'error';
+  }
+}
+
+// Listet alle Audio-Input-Geräte. Gerätenamen sind nur nach granted permission
+// lesbar — deshalb vorher einmal primen.
+async function populateMicList() {
+  const sel = document.getElementById('sttMicSelect');
+  if (!sel || !navigator.mediaDevices?.enumerateDevices) return;
+  if (!STT.permissionPrimed) {
+    try { await primeMic(); } catch (e) { /* Labels bleiben generisch, aber Liste geht */ }
+  }
+  let devices = [];
+  try { devices = await navigator.mediaDevices.enumerateDevices(); } catch { return; }
+  const mics = devices.filter(d => d.kind === 'audioinput');
+  const prev = sel.value || STT.micDeviceId || '';
+  sel.innerHTML =
+    '<option value="">Systemstandard (Windows-Einstellung)</option>' +
+    mics.map(m => {
+      const label = m.label || ('Mikrofon ' + (m.deviceId || '').slice(0, 6));
+      return `<option value="${escapeAttr(m.deviceId)}">${escapeHtml(label)}</option>`;
+    }).join('');
+  if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  // Hilfetext wenn kein Label sichtbar → Hinweis zum Permission-Grant
+  const help = document.getElementById('sttMicHelp');
+  if (help) {
+    const anyLabel = mics.some(m => m.label);
+    help.textContent = anyLabel
+      ? ''
+      : 'Gerätenamen werden erst nach einmaliger Mikrofon-Erlaubnis sichtbar. Klick auf 🎤 Test.';
+  }
+}
 
 function sttNormalize(s) {
   // Kleinbuchstaben, Akzente entfernen (č→c, š→s, ž→z), Satzzeichen raus,
@@ -5642,14 +5752,20 @@ function listenSl(expected, onState) {
       onState && onState('stopped');
       if (!finished) reject(new Error('Keine Aufnahme erkannt'));
     };
-    try {
-      r.start();
-      STT.active = r;
-      onState && onState('listening');
-    } catch (e) {
-      STT.active = null;
-      reject(e);
-    }
+    // Vor jedem Start das gewählte Mikrofon primen — so nutzt die Web Speech API
+    // genau das, was der Nutzer ausgewählt hat (bzw. das Windows-Systemstandard).
+    primeMic().catch((e) => {
+      console.warn('primeMic failed, falling back to browser default', e);
+    }).finally(() => {
+      try {
+        r.start();
+        STT.active = r;
+        onState && onState('listening');
+      } catch (e) {
+        STT.active = null;
+        reject(e);
+      }
+    });
   });
 }
 
@@ -5880,6 +5996,53 @@ function initPhrasebook() {
       // Kurze akustische Rückmeldung der neuen Stimme
       speakSl('Pozdravljeni!');
     });
+  }
+
+  // Mikrofon-Picker: listet alle audioinput-Geräte. Default = Windows-Standard-
+  // mikrofon. Auswahl wird in den Settings persistiert und vor jeder Erkennung
+  // via primeMic() aktiviert, damit die Web Speech API sie auch wirklich nutzt.
+  if (STT.supported && navigator.mediaDevices?.enumerateDevices) {
+    const micRow = document.getElementById('sttMicRow');
+    const micSel = document.getElementById('sttMicSelect');
+    const micTest = document.getElementById('sttMicTest');
+    if (micRow) micRow.hidden = false;
+
+    // Letzte Auswahl wiederherstellen (leer = Systemstandard)
+    STT.micDeviceId = STATE.settings.sttMicDeviceId || '';
+
+    // Wenn die Mikrofon-Erlaubnis schon früher erteilt wurde, lautlos im
+    // Hintergrund primen — Geräteliste ist dann sofort befüllt, ohne dass der
+    // Nutzer die Sprache-Tab überhaupt öffnen muss. Bei 'prompt' warten wir
+    // auf den Tab-Switch (siehe switchTab) damit der Dialog kontextsensitiv
+    // erscheint und nicht aus dem Nichts beim Seitenaufruf.
+    ensureMicReady({ silentIfPrompt: true }).then(() => {
+      if (micSel && STT.micDeviceId) micSel.value = STT.micDeviceId;
+    }).catch(()=>{});
+
+    micSel?.addEventListener('change', () => {
+      STT.micDeviceId = micSel.value || '';
+      STATE.settings.sttMicDeviceId = STT.micDeviceId;
+      saveSettings();
+      // Gleich primen, damit die Auswahl beim nächsten r.start() greift
+      primeMic().catch(()=>{});
+    });
+
+    micTest?.addEventListener('click', async () => {
+      const help = document.getElementById('sttMicHelp');
+      try {
+        if (help) help.textContent = 'Teste Mikrofon …';
+        await primeMic({ keepAliveMs: 1200 });
+        if (help) help.textContent = 'Mikrofon erreichbar ✓ — Geräte aktualisiert.';
+        populateMicList();
+      } catch (e) {
+        if (help) help.textContent = 'Mikrofon nicht zugänglich: ' + (e.message || 'Erlaubnis verweigert?') + ' — in Browser-Einstellungen erlauben.';
+      }
+    });
+
+    // Hotplug: neue/entfernte Geräte automatisch übernehmen
+    try {
+      navigator.mediaDevices.addEventListener('devicechange', populateMicList);
+    } catch {}
   }
 
   renderPhraseCats();
