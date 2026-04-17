@@ -308,6 +308,35 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .side {
   width:420px; flex-shrink:0; background:var(--bg-2); border-left:1px solid var(--rule);
   display:flex; flex-direction:column; overflow:hidden; position:relative; z-index:30;
+  transition:width .28s cubic-bezier(.2,.9,.3,1);
+}
+
+/* Auf Desktop bekommt die Sprache-Tab deutlich mehr Platz — mindestens halber
+   Bildschirm, damit der Sprachführer + Übungen übersichtlich wirken. Phrasen
+   werden in einem responsiven 2-Spalten-Grid dargestellt. */
+@media (min-width: 901px) {
+  .side:has(.tab-panel[data-panel="phrase"].active) {
+    width:min(58vw, 960px);
+    min-width:50vw;
+  }
+  .side:has(.tab-panel[data-panel="phrase"].active) .phrase-list {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
+    column-gap:18px;
+  }
+  .side:has(.tab-panel[data-panel="phrase"].active) .phrase-item {
+    border-bottom:1px solid var(--rule);
+  }
+  .side:has(.tab-panel[data-panel="phrase"].active) .flashcard {
+    max-width:640px; margin-left:auto; margin-right:auto;
+    padding:40px 28px; min-height:220px;
+  }
+  .side:has(.tab-panel[data-panel="phrase"].active) .tts-bar {
+    display:grid; grid-template-columns:1fr 1fr; gap:12px 18px;
+  }
+  .side:has(.tab-panel[data-panel="phrase"].active) .tts-bar .tts-help {
+    grid-column:1 / -1;
+  }
 }
 
 /* Tab-Navigation: alte Inline-Tabs + Drop-Bar entfernt — Navigation läuft
