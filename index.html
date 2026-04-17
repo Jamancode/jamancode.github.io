@@ -63,6 +63,7 @@
   --ff-mono: "JetBrains Mono",ui-monospace,monospace;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
+  --sheet-tiny: 7vh;
   --sheet-peek: 20vh;
   --sheet-half: 50vh;
   --sheet-full: 100vh;
@@ -853,6 +854,7 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
     z-index:500; box-shadow:0 -4px 20px rgba(0,0,0,.3);
     padding-bottom:var(--safe-bottom);
   }
+  .side.tiny { height:var(--sheet-tiny); }
   .side.half { height:var(--sheet-half); }
   .side.full { height:var(--sheet-full); border-radius:0; padding-top:var(--safe-top); }
   .side.full .tab-content { padding-bottom:calc(40px + var(--safe-bottom)); }
@@ -892,6 +894,7 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
   }
   .map-wrap { flex:1; height:calc(100% - var(--sheet-peek)); }
   .fab-cluster { bottom:calc(var(--sheet-peek) + 12px + var(--safe-bottom)); transition:bottom .3s cubic-bezier(.2,.9,.3,1); }
+  body.sheet-tiny .fab-cluster { bottom:calc(var(--sheet-tiny) + 12px + var(--safe-bottom)); }
   .side.half ~ * .fab-cluster, body.sheet-half .fab-cluster { bottom:calc(var(--sheet-half) + 12px + var(--safe-bottom)); }
   body.sheet-full .fab-cluster { bottom:calc(var(--sheet-full) + 12px + var(--safe-bottom)); opacity:0; pointer-events:none; }
   header { padding:calc(8px + var(--safe-top)) 10px 8px; min-height:52px; gap:8px; }
@@ -992,6 +995,9 @@ label.lbl { display:block; font-size:10.5px; letter-spacing:0.16em; text-transfo
         Zurück zur Karte
       </button>
       <div class="sheet-snaps" id="sheetSnaps" role="group" aria-label="Panel-Größe">
+        <button type="button" class="snap-btn" data-snap="tiny" aria-pressed="false" aria-label="Minimiert (nur Leiste)" title="Minimiert">
+          <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h6"/></svg>
+        </button>
         <button type="button" class="snap-btn" data-snap="peek" aria-pressed="true" aria-label="Nur Titel (unten)" title="Nur Titel">
           <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h10"/></svg>
         </button>
@@ -4879,12 +4885,11 @@ function initMapInteraction() {
 function snapSheet(state) {
   const side = document.getElementById('side');
   if (!side) return;
-  if (!['peek','half','full'].includes(state)) state = 'peek';
-  side.classList.remove('half','full');
-  if (state === 'half' || state === 'full') side.classList.add(state);
-  document.body.classList.remove('sheet-half','sheet-full');
-  if (state === 'half') document.body.classList.add('sheet-half');
-  if (state === 'full') document.body.classList.add('sheet-full');
+  if (!['tiny','peek','half','full'].includes(state)) state = 'peek';
+  side.classList.remove('tiny','half','full');
+  if (state !== 'peek') side.classList.add(state);
+  document.body.classList.remove('sheet-tiny','sheet-half','sheet-full');
+  if (state !== 'peek') document.body.classList.add('sheet-' + state);
   // Snap-Buttons synchronisieren
   document.querySelectorAll('#sheetSnaps .snap-btn').forEach(b => {
     b.setAttribute('aria-pressed', String(b.dataset.snap === state));
@@ -4893,7 +4898,10 @@ function snapSheet(state) {
 function currentSheetState() {
   const side = document.getElementById('side');
   if (!side) return 'peek';
-  return side.classList.contains('full') ? 'full' : side.classList.contains('half') ? 'half' : 'peek';
+  if (side.classList.contains('full')) return 'full';
+  if (side.classList.contains('half')) return 'half';
+  if (side.classList.contains('tiny')) return 'tiny';
+  return 'peek';
 }
 function initSheetDrag() {
   const side = document.getElementById('side');
@@ -4928,19 +4936,29 @@ function initSheetDrag() {
     try { handle.releasePointerCapture(pointerId); } catch(_) {}
     pointerId = null;
     if (!moved) {
-      // Tap → zyklisch: peek → half → full → peek
+      // Tap → zyklisch: tiny → peek → half → full → tiny
       const cur = currentSheetState();
-      const next = cur === 'peek' ? 'half' : cur === 'half' ? 'full' : 'peek';
+      const order = ['tiny','peek','half','full'];
+      const next = order[(order.indexOf(cur) + 1) % order.length];
       snapSheet(next);
       return;
     }
     const vh = window.innerHeight;
     const h = side.getBoundingClientRect().height;
     side.style.height = '';
-    // Neue Schwellen passend zu 20/50/100 vh
-    if (h < vh*0.32) snapSheet('peek');
-    else if (h < vh*0.75) snapSheet('half');
-    else snapSheet('full');
+    // Snap zur nächstgelegenen Stufe (tiny=7, peek=20, half=50, full=100 vh)
+    // Midpoint-Schwellen: 0–13 → tiny, 13–35 → peek, 35–75 → half, 75–100 → full.
+    // Richtungs-Guard verhindert „Bounce" entgegen der Drag-Richtung.
+    const STATES = ['tiny','peek','half','full'];
+    const stateFromRel = (r) => r < 0.135 ? 'tiny' : r < 0.35 ? 'peek' : r < 0.75 ? 'half' : 'full';
+    let target = stateFromRel(h / vh);
+    const startState = stateFromRel(startH / vh);
+    const dy = h - startH; // <0 = nach unten gezogen, >0 = nach oben
+    const si = STATES.indexOf(startState);
+    const ti = STATES.indexOf(target);
+    if (dy < 0 && ti > si) target = startState; // nach unten gezogen → nie höher
+    else if (dy > 0 && ti < si) target = startState; // nach oben gezogen → nie tiefer
+    snapSheet(target);
   }
 
   handle.addEventListener('pointerdown', onDown);
@@ -4955,7 +4973,8 @@ function initSheetDrag() {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       const cur = currentSheetState();
-      const next = cur === 'peek' ? 'half' : cur === 'half' ? 'full' : 'peek';
+      const order = ['tiny','peek','half','full'];
+      const next = order[(order.indexOf(cur) + 1) % order.length];
       snapSheet(next);
     }
   });
@@ -4990,6 +5009,7 @@ function initSheetDrag() {
     const cur = currentSheetState();
     if (cur === 'full') { snapSheet('half'); e.preventDefault(); }
     else if (cur === 'half') { snapSheet('peek'); e.preventDefault(); }
+    else if (cur === 'peek') { snapSheet('tiny'); e.preventDefault(); }
   });
 }
 
