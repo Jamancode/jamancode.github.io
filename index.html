@@ -2043,6 +2043,7 @@ async function fetchPoisBatched(catKeys, bounds) {
 
 let _poiReloadTimer = null;
 let _poiInFlight = false;
+let _poiNeedsReload = false;
 // Per-Kategorie-Rendering-Zustand. Key = catKey, Value = { snapKey, markers:L.marker[], layer:'dense'|'sparse' }.
 // Dadurch bleibt alles was bereits sichtbar ist beim Toggeln oder Pannen stehen;
 // wir räumen nur punktuell die EINE Kategorie auf, die sich wirklich geändert hat.
@@ -2091,77 +2092,94 @@ let _pendingSnapKey = '';
 // der Unterschied zwischen "aktuell sichtbar" und "soll sichtbar sein" angewandt.
 // Sparse (Bus, BicikeLJ, Bahn …) landen aus dem Citywide-Cache sofort – ohne Netz.
 async function reloadPois() {
-  if (map.getZoom() < 13) {
-    // Zu weit raus: alles raus, aber bewusst pro Kategorie über removeCatMarkers,
-    // damit der Zustand konsistent bleibt.
-    for (const k of [..._catRender.keys()]) removeCatMarkers(k);
-    setStatus(STATE.activePoiCategories.size ? 'Zoome näher heran, um POIs zu laden' : '');
-    return;
-  }
-  if (_poiInFlight) return;
-
   const bounds = map.getBounds();
   const snapKey = snapKeyFor(bounds);
   _pendingSnapKey = snapKey;
 
   const active = new Set(STATE.activePoiCategories);
 
-  // 1) Kategorien entfernen, die deaktiviert wurden ODER in neuer Snap-Bbox veraltet sind.
-  //    Sparse-Kategorien sind NICHT an die Snap-Bbox gebunden (sie nutzen stadtweit den
-  //    CITYWIDE-Cache); wir refiltern sie nur clientseitig, re-fetchen nicht.
-  for (const [catKey, entry] of [..._catRender.entries()]) {
-    if (!active.has(catKey)) { removeCatMarkers(catKey); continue; }
-    if (entry.layer === 'dense' && entry.snapKey !== snapKey) removeCatMarkers(catKey);
+  // 1) Nur DEAKTIVIERTE Kategorien entfernen. Stale-snap Dense-Marker bleiben
+  //    bewusst stehen, bis der Ersatz-Fetch fertig ist — kein "leerer-Map-Flash"
+  //    mehr während der 5-30 s Overpass-Wartezeit.
+  for (const [catKey] of [..._catRender.entries()]) {
+    if (!active.has(catKey)) removeCatMarkers(catKey);
   }
 
-  // 2) Was muss jetzt neu kommen?
+  // 2) Bei Zoom < 13 pausieren wir neue Dense-Fetches (Overpass würde timeouten),
+  //    aber bereits gezeichnete Marker bleiben sichtbar. Sparse werden trotzdem
+  //    aus dem Citywide-Cache gerendert, damit Bus/Bahn/Bike auch aus der Übersicht
+  //    erkennbar bleiben.
+  const zoomTooLow = map.getZoom() < 13;
+
+  // 3) Was muss jetzt neu kommen?
+  //    - Sparse: nicht bbox-gebunden → einmal gerendert = bleibt
+  //    - Dense: veralteter snapKey → braucht Refresh (alte Marker bleiben bis Ersatz)
   const needSparse = [];
   const needDense = [];
   for (const k of active) {
-    if (_catRender.has(k)) continue; // schon gezeichnet – überspringen
-    if (POI_SPARSE_KEYS.has(k)) needSparse.push(k);
-    else needDense.push(k);
+    const entry = _catRender.get(k);
+    if (POI_SPARSE_KEYS.has(k)) {
+      if (!entry) needSparse.push(k);
+    } else {
+      if (!entry || entry.snapKey !== snapKey) needDense.push(k);
+    }
   }
 
-  // 3) Sparse zuerst: wenn CITYWIDE-Cache vorhanden ist, rendern wir SOFORT ohne Netz.
-  //    Fehlen welche, starten wir prefetch im Hintergrund und rendern sobald da.
+  // 4) Sparse zuerst — citywide gefiltert (nicht auf Viewport), damit sie beim
+  //    Pan nicht "neu geladen" werden müssen. Cluster blendet eh nur das Sichtbare ein.
   const sparseInCache = needSparse.filter(k => STATE_CITYWIDE.data.has(k));
   const sparseMissing = needSparse.filter(k => !STATE_CITYWIDE.data.has(k));
   if (sparseInCache.length) {
-    const sp = citywideSparseInBounds(sparseInCache, bounds);
+    const sp = citywideSparseInBounds(sparseInCache, CITY_PREFETCH_BOUNDS);
     for (const k of sparseInCache) addCatMarkers(k, sp[k] || [], 'sparse');
   }
   if (sparseMissing.length) {
     prefetchCitywideSparse(sparseMissing).then(() => {
-      // Nur zeichnen, wenn die Kategorien zum Zeitpunkt des Nachladens noch aktiv sind
-      // und wir nicht längst auf einem anderen Ausschnitt/Set sind.
       const stillActive = sparseMissing.filter(k => STATE.activePoiCategories.has(k) && !_catRender.has(k));
       if (!stillActive.length) return;
-      const sp = citywideSparseInBounds(stillActive, map.getBounds());
+      const sp = citywideSparseInBounds(stillActive, CITY_PREFETCH_BOUNDS);
       for (const k of stillActive) addCatMarkers(k, sp[k] || [], 'sparse');
       setStatus(renderedStatus());
     }).catch(()=>{});
   }
 
-  // 4) Dense: hier entsteht der Netzlast-Peak. Batch-Query nur über die Kategorien,
-  //    die tatsächlich noch fehlen – wir räumen nichts kaputt, was schon da ist.
-  if (needDense.length) {
+  // 5) Dense-Fetch — nur EIN gleichzeitig; Stale-Mismatch triggert neu;
+  //    Exceptions triggern NICHT neu (sonst Overpass-Hammer).
+  if (needDense.length && !zoomTooLow) {
+    if (_poiInFlight) { _poiNeedsReload = true; setStatus(renderedStatus()); return; }
     _poiInFlight = true;
+    const fetchSnapKey = snapKey;
+    const fetchBounds = bounds;
     setStatus(`Lade ${needDense.length} Kategorie(n) …`);
     try {
-      const res = await fetchPoisBatched(needDense, bounds);
-      // Zwischenzeitlich könnte sich aktives Set geändert haben – wir übernehmen nur,
-      // was noch gebraucht wird.
-      for (const k of needDense) {
-        if (!STATE.activePoiCategories.has(k)) continue;
-        if (_catRender.has(k)) continue; // jemand anders hat es schon gerendert
-        addCatMarkers(k, res[k] || [], 'dense');
+      const res = await fetchPoisBatched(needDense, fetchBounds);
+      if (fetchSnapKey !== _pendingSnapKey) {
+        // Zwischendurch weit gepannt — Daten sind für alte Bbox, wir retriggern
+        // für neue Bbox. Alte Marker auf der Karte bleiben erhalten.
+        _poiNeedsReload = true;
+      } else {
+        for (const k of needDense) {
+          if (!STATE.activePoiCategories.has(k)) continue;
+          // Jetzt erst alte Marker dieser Kategorie entfernen — Crossfade-Übergabe.
+          if (_catRender.has(k)) removeCatMarkers(k);
+          addCatMarkers(k, res[k] || [], 'dense');
+        }
       }
-    } catch(e) { console.warn('reloadPois dense failed', e); }
-    finally { _poiInFlight = false; }
+    } catch(e) {
+      console.warn('reloadPois dense failed', e);
+      // Kein Retrigger bei Netzfehler — sonst Endlos-Schleife. Alte Marker bleiben;
+      // der nächste Pan/Toggle holt sich bei Bedarf einen frischen Versuch.
+    }
+    finally {
+      _poiInFlight = false;
+      if (_poiNeedsReload) {
+        _poiNeedsReload = false;
+        schedulePoiReload();
+      }
+    }
   }
 
-  setStatus(renderedStatus());
+  setStatus(zoomTooLow && active.size ? (renderedStatus() + ' · näher zoomen für mehr') : renderedStatus());
 }
 
 function renderedStatus() {
@@ -2186,7 +2204,8 @@ function togglePoiCategoryFast(catKey) {
     STATE.activePoiCategories.add(catKey);
     // Sofort-Rendering aus Cache, ohne auf Debounce zu warten.
     if (POI_SPARSE_KEYS.has(catKey) && STATE_CITYWIDE.data.has(catKey)) {
-      const sp = citywideSparseInBounds([catKey], map.getBounds());
+      // Sparse citywide rendern (nicht auf Viewport filtern), damit sie beim Pan bleiben.
+      const sp = citywideSparseInBounds([catKey], CITY_PREFETCH_BOUNDS);
       _pendingSnapKey = snapKeyFor(map.getBounds());
       addCatMarkers(catKey, sp[catKey] || [], 'sparse');
     } else {
